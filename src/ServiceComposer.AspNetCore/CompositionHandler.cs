@@ -75,6 +75,18 @@ namespace ServiceComposer.AspNetCore
                     }
                 }
 
+                var postProcessorsTasks = new List<Task>();
+                foreach (var postProcessor in interceptors.OfType<IPostProcessComposedViewModel>())
+                {
+                    //cannot do this in parallel as each post processor can modify the whole VM
+                    //or they are serialized or there can be only one post processor
+                    //per requests
+                    //pending.Add
+                    //(
+                    //    postProcessor.PostProcess(requestId, viewModel, routeData, request)
+                    //);
+                }
+
                 return (viewModel, StatusCodes.Status200OK);
             }
             finally
