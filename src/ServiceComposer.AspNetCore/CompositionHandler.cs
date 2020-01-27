@@ -81,7 +81,7 @@ namespace ServiceComposer.AspNetCore
                     //cannot do this in parallel as each post processor can modify the whole VM
                     //or they are serialized or there can be only one post processor
                     //per requests
-                    //pending.Add
+                    //postProcessorsTasks.Add
                     //(
                     //    postProcessor.PostProcess(requestId, viewModel, routeData, request)
                     //);
