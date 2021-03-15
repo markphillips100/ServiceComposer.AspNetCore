@@ -9,7 +9,7 @@ namespace ServiceComposer.AspNetCore
     public class ViewModelCompositionOptions
     {
         readonly CompositionMetadataRegistry _compositionMetadataRegistry = new CompositionMetadataRegistry();
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
         readonly CompositionOverControllersRoutes _compositionOverControllersRoutes = new CompositionOverControllersRoutes();
 #endif
 
@@ -20,7 +20,12 @@ namespace ServiceComposer.AspNetCore
 
             Services.AddSingleton(this);
             Services.AddSingleton(_compositionMetadataRegistry);
+#if NETCOREAPP3_1 || NET5_0
+            ResponseSerialization = new ResponseSerializationOptions(Services);
+#endif
         }
+
+        internal Func<Type, bool> TypesFilter { get; set; } = type => true;
 
         List<(Func<Type, bool>, Action<IEnumerable<Type>>)> typesRegistrationHandlers = new List<(Func<Type, bool>, Action<IEnumerable<Type>>)>();
         Dictionary<Type, Action<Type, IServiceCollection>> configurationHandlers = new Dictionary<Type, Action<Type, IServiceCollection>>();
@@ -40,7 +45,7 @@ namespace ServiceComposer.AspNetCore
             typesRegistrationHandlers.Add((typesFilter, registrationHandler));
         }
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
         internal CompositionOverControllersOptions CompositionOverControllersOptions { get; private set; } = new CompositionOverControllersOptions();
 
         public void EnableCompositionOverControllers()
@@ -64,7 +69,7 @@ namespace ServiceComposer.AspNetCore
 
         internal void InitializeServiceCollection()
         {
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
             if (CompositionOverControllersOptions.IsEnabled)
             {
                 Services.AddSingleton(_compositionOverControllersRoutes);
@@ -73,6 +78,8 @@ namespace ServiceComposer.AspNetCore
                     options.Filters.Add(typeof(CompositionOverControllersActionFilter));
                 });
             }
+
+            Services.AddSingleton<RequestModelBinder>();
 #endif
 
             if (AssemblyScanner.IsEnabled)
@@ -83,7 +90,9 @@ namespace ServiceComposer.AspNetCore
                         var typeInfo = type.GetTypeInfo();
                         return !typeInfo.IsInterface
                             && !typeInfo.IsAbstract
+#pragma warning disable 618
                             && typeof(IInterceptRoutes).IsAssignableFrom(type);
+#pragma warning restore 618
                     },
                     registrationHandler: types =>
                     {
@@ -105,11 +114,11 @@ namespace ServiceComposer.AspNetCore
                     {
                         foreach (var type in types)
                         {
-                            RegisterCompositionHandler(type);
+                            RegisterCompositionComponents(type);
                         }
                     });
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
                 AddTypesRegistrationHandler(
                     typesFilter: type =>
                     {
@@ -125,11 +134,45 @@ namespace ServiceComposer.AspNetCore
                             Services.AddTransient(typeof(IViewModelPreviewHandler), type);
                         }
                     });
+
+                AddTypesRegistrationHandler(
+                    typesFilter: type =>
+                    {
+                        var typeInfo = type.GetTypeInfo();
+                        return !typeInfo.IsInterface
+                               && !typeInfo.IsAbstract
+                               && typeof(IViewModelFactory).IsAssignableFrom(type)
+                               && !typeof(IEndpointScopedViewModelFactory).IsAssignableFrom(type);
+                    },
+                    registrationHandler: types =>
+                    {
+                        foreach (var type in types)
+                        {
+                            RegisterGlobalViewModelFactory(type);
+                        }
+                    });
+
+                AddTypesRegistrationHandler(
+                    typesFilter: type =>
+                    {
+                        var typeInfo = type.GetTypeInfo();
+                        return !typeInfo.IsInterface
+                               && !typeInfo.IsAbstract
+                               && typeof(IEndpointScopedViewModelFactory).IsAssignableFrom(type);
+                    },
+                    registrationHandler: types =>
+                    {
+                        foreach (var type in types)
+                        {
+                            Services.AddTransient(typeof(IEndpointScopedViewModelFactory), type);
+                        }
+                    });
 #endif
 
                 var assemblies = AssemblyScanner.Scan();
                 var allTypes = assemblies
                     .SelectMany(assembly => assembly.GetTypes())
+                    .Where(TypesFilter)
                     .Distinct()
                     .ToList();
 
@@ -152,26 +195,49 @@ namespace ServiceComposer.AspNetCore
 
         public IServiceCollection Services { get; private set; }
 
+#if NETCOREAPP3_1 || NET5_0
+        public ResponseSerializationOptions ResponseSerialization { get; }
+#endif
+
+#pragma warning disable 618
         public void RegisterRequestsHandler<T>() where T: IHandleRequests
+#pragma warning restore 618
         {
             RegisterRouteInterceptor(typeof(T));
         }
 
+#pragma warning disable 618
         public void RegisterCompositionEventsSubscriber<T>() where T : ISubscribeToCompositionEvents
+#pragma warning restore 618
         {
             RegisterRouteInterceptor(typeof(T));
         }
 
         public void RegisterCompositionHandler<T>()
         {
-            RegisterCompositionHandler(typeof(T));
+            RegisterCompositionComponents(typeof(T));
         }
 
-        void RegisterCompositionHandler(Type type)
+        void RegisterCompositionComponents(Type type)
         {
-            if (!(typeof(ICompositionRequestsHandler).IsAssignableFrom(type) || typeof(ICompositionEventsSubscriber).IsAssignableFrom(type)))
+            if (
+                !(
+                    typeof(ICompositionRequestsHandler).IsAssignableFrom(type)
+                    || typeof(ICompositionEventsSubscriber).IsAssignableFrom(type)
+#if NETCOREAPP3_1 || NET5_0
+                    || typeof(IEndpointScopedViewModelFactory).IsAssignableFrom(type)
+#endif
+                )
+            )
             {
-                throw new NotSupportedException("Registered types must be ICompositionRequestsHandler or ICompositionEventsSubscriber.");
+#if NETCOREAPP3_1 || NET5_0
+                var message = $"Registered types must be either {nameof(ICompositionRequestsHandler)}, " +
+                              $"{nameof(ICompositionEventsSubscriber)}, or {nameof(IEndpointScopedViewModelFactory)}.";
+#else
+                var message = $"Registered types must be either {nameof(ICompositionRequestsHandler)} " +
+                              $"or {nameof(ICompositionEventsSubscriber)}.";
+#endif
+                throw new NotSupportedException(message);
             }
 
             _compositionMetadataRegistry.AddComponent(type);
@@ -185,6 +251,59 @@ namespace ServiceComposer.AspNetCore
             }
         }
 
+#if NETCOREAPP3_1 || NET5_0
+        public void RegisterEndpointScopedViewModelFactory<T>() where T: IEndpointScopedViewModelFactory
+        {
+            RegisterCompositionComponents(typeof(T));
+        }
+
+        public void RegisterGlobalViewModelFactory<T>() where T: IViewModelFactory
+        {
+            RegisterGlobalViewModelFactory(typeof(T));
+        }
+
+        void RegisterGlobalViewModelFactory(Type viewModelFactoryType)
+        {
+            if (viewModelFactoryType == null)
+            {
+                throw new ArgumentNullException(nameof(viewModelFactoryType));
+            }
+
+            if (!typeof(IViewModelFactory).IsAssignableFrom(viewModelFactoryType))
+            {
+                throw new ArgumentOutOfRangeException($"Type must implement {nameof(IViewModelFactory)}.");
+            }
+
+            if (typeof(IEndpointScopedViewModelFactory).IsAssignableFrom(viewModelFactoryType))
+            {
+                var paramName = $"To register {nameof(IEndpointScopedViewModelFactory)} use " +
+                                $"the {nameof(RegisterEndpointScopedViewModelFactory)} method.";
+                throw new ArgumentOutOfRangeException(paramName);
+            }
+
+            var globalFactoryRegistration = Services.SingleOrDefault(sd => sd.ServiceType == typeof(IViewModelFactory));
+            if (globalFactoryRegistration != null)
+            {
+                var message = $"Only one global {nameof(IViewModelFactory)} is supported.";
+                if (globalFactoryRegistration.ImplementationType != null)
+                {
+                    message += $" {globalFactoryRegistration.ImplementationType.Name} is already registered as a global view model factory.";
+                }
+
+                throw new NotSupportedException(message);
+            }
+
+            if (configurationHandlers.TryGetValue(viewModelFactoryType, out var handler))
+            {
+                handler(viewModelFactoryType, Services);
+            }
+            else
+            {
+                Services.AddTransient(typeof(IViewModelFactory), viewModelFactoryType);
+            }
+        }
+#endif
+
         void RegisterRouteInterceptor(Type type)
         {
             if (configurationHandlers.TryGetValue(type, out var handler))
@@ -193,7 +312,9 @@ namespace ServiceComposer.AspNetCore
             }
             else
             {
+#pragma warning disable 618
                 Services.AddTransient(typeof(IInterceptRoutes), type);
+#pragma warning restore 618
             }
         }
     }

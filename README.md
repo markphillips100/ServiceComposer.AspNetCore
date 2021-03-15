@@ -9,16 +9,31 @@ To change this file edit the source file and then run MarkdownSnippets.
 
 # ServiceComposer
 
-ServiceComposer is a ViewModel Composition Gateway. For more details, and the philosophy behind a Composition Gateway, refer to the [ViewModel Composition series](https://milestone.topics.it/categories/view-model-composition) of article available on [milestone.topics.it](https://milestone.topics.it/).
+ServiceComposer is a ViewModel Composition Gateway.
 
-## Usage
+Designing a UI when the back-end system consists of dozens (or more) of (micro)services is challenging. We have separation and autonomy on the back end, but this all needs to come back together on the front-end. ViewModel Composition stops it from turning into a mess of spaghetti code and prevents simple actions from causing an inefficient torrent of web requests.
 
-### ASP.NET Core 3.x
+<!-- toc -->
+## Contents
 
-ServiceComposer for ASP.NET Core 3.x levarages the new Endpoints support to plugin into the request handling pipeline.
-ServiceComposer can be added to exsting or new ASP.NET Core projects, and to .NET Core console applications.
+  * [Technical introduction](#technical-introduction)
+  * [Getting Started](#getting-started)
+  * [Documentation and supported platforms](#documentation-and-supported-platforms)
+  * [Philosophy](#philosophy)
+    * [Service boundaries](#service-boundaries)<!-- endToc -->
 
-Add a reference to `ServiceComposer.AspNetCore` Nuget package and configure the `Startup` class like follows:
+## Technical introduction
+
+For a technical introduction and an overview of the problem space, refer to the following presentation available on [YouTube](https://www.youtube.com/watch?v=AxWGAiIg7_0).
+
+## Getting Started
+
+Imagine an elementary e-commerce web page, where it's needed to display details about a selected product. These details are stored in two different services. The Sales service owns the product price, and the Marketing service owns the product name and description. ServiceComposer solves the problem of composing information coming from different services into one composed view model that can be later displayed or consumed by downstream clients.
+
+To start using ServiceComposer, follow the outlined steps:
+
+- Create, in an empty or existing solution, a .NET Core 3.x or later empty web application project named `CompositionGateway`.
+- Add a package reference to the `ServiceComposer.AspNetCore` NuGet package and configure the `Startup` class as follows:
 
 <!-- snippet: net-core-3x-sample-startup -->
 <a id='snippet-net-core-3x-sample-startup'></a>
@@ -38,148 +53,96 @@ public class Startup
     }
 }
 ```
-<sup><a href='/src/Snippets.NetCore3x/Configuration/Startup.cs#L8-L23' title='File snippet `net-core-3x-sample-startup` was extracted from'>snippet source</a> | <a href='#snippet-net-core-3x-sample-startup' title='Navigate to start of snippet `net-core-3x-sample-startup`'>anchor</a></sup>
+<sup><a href='/src/Snippets.NetCore3x/BasicUsage/Startup.cs#L8-L23' title='Snippet source file'>snippet source</a> | <a href='#snippet-net-core-3x-sample-startup' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-> NOTE: To use a `Startup` class Generic Host support is required.
+> NOTE: To use a `Startup` class, Generic Host support is required.
 
-ServiceComposer uses regular ASP.NET Core attribute routing to configure routes for which composition support is required. For example, to enable composition support for the `/sample/{id}` route an handler like the following can be defined:
+- Add a new .NET Core 3.x or later class library project, named `Sales.ViewModelComposition`.
+- Add a package reference to the `ServiceComposer.AspNetCore` NuGet package.
+- Add a new class to create a composition request handler.
+- Define the class similar to the following:
 
-<!-- snippet: net-core-3x-sample-handler -->
-<a id='snippet-net-core-3x-sample-handler'></a>
+<!-- snippet: net-core-3x-basic-usage-sales-handler -->
+<a id='snippet-net-core-3x-basic-usage-sales-handler'></a>
 ```cs
-public class SampleHandler : ICompositionRequestsHandler
+public class SalesProductInfo : ICompositionRequestsHandler
 {
-    [HttpGet("/sample/{id}")]
+    [HttpGet("/product/{id}")]
     public Task Handle(HttpRequest request)
     {
+        var vm = request.GetComposedResponseModel();
+
+        //retrieve product details from the sales database or service
+        vm.ProductId = request.HttpContext.GetRouteValue("id").ToString();
+        vm.ProductPrice = 100;
+
         return Task.CompletedTask;
     }
 }
 ```
-<sup><a href='/src/Snippets.NetCore3x/SampleHandler/SampleHandler.cs#L10-L19' title='File snippet `net-core-3x-sample-handler` was extracted from'>snippet source</a> | <a href='#snippet-net-core-3x-sample-handler' title='Navigate to start of snippet `net-core-3x-sample-handler`'>anchor</a></sup>
+<sup><a href='/src/Snippets.NetCore3x/BasicUsage/SalesProductInfo.cs#L9-L24' title='Snippet source file'>snippet source</a> | <a href='#snippet-net-core-3x-basic-usage-sales-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-#### Authentication and Authorization
+- Add another class library project, named `Marketing.ViewModelComposition`, and define a composition request handler like the following:
 
-By virtue of leveraging ASP.NET Core 3.x Endpoints ServiceComposer automatically supports authentication and authorization metadata attributes to express authentication and authorization requirements on routes. For example, it's possible to use the `Authorize` attribute to specify that a handler requires authorization. The authorization process is the regular ASP.NET Core 3.x process and no special configuration is needed to plugin ServiceComposer:
-
-<!-- snippet: net-core-3x-sample-handler-with-authorization -->
-<a id='snippet-net-core-3x-sample-handler-with-authorization'></a>
+<!-- snippet: net-core-3x-basic-usage-marketing-handler -->
+<a id='snippet-net-core-3x-basic-usage-marketing-handler'></a>
 ```cs
-public class SampleHandlerWithAuthorization : ICompositionRequestsHandler
+public class MarketingProductInfo: ICompositionRequestsHandler
 {
-    [Authorize]
-    [HttpGet("/sample/{id}")]
+    [HttpGet("/product/{id}")]
     public Task Handle(HttpRequest request)
     {
+        var vm = request.GetComposedResponseModel();
+
+        //retrieve product details from the marketing database or service
+        vm.ProductName = "Sample product";
+        vm.ProductDescription = "This is a sample product";
+        
         return Task.CompletedTask;
     }
 }
 ```
-<sup><a href='/src/Snippets.NetCore3x/SampleHandler/SampleHandler.cs#L21-L31' title='File snippet `net-core-3x-sample-handler-with-authorization` was extracted from'>snippet source</a> | <a href='#snippet-net-core-3x-sample-handler-with-authorization' title='Navigate to start of snippet `net-core-3x-sample-handler-with-authorization`'>anchor</a></sup>
+<sup><a href='/src/Snippets.NetCore3x/BasicUsage/MarketingProductInfo.cs#L8-L23' title='Snippet source file'>snippet source</a> | <a href='#snippet-net-core-3x-basic-usage-marketing-handler' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-#### Custom HTTP status codes in ASP.NET Core 3.x
+- Make so that the web application project created at the beginning can load both class library assemblies, e.g., by adding a reference to the class library projects
+- Build and run the web application project
+- Using a browser or a tool like Postman, issue an HTTP Get request to `<url-of-the-web-application>/product/1`
 
-The response status code can be set in requests handlers and it'll be honored by the composition pipeline. To set a custom response status code the following snippet can be used:
+The HTTP response should be a JSON result containing the properties and values defined in the composition handler classes.
 
-<!-- snippet: net-core-3x-sample-handler-with-custom-status-code -->
-<a id='snippet-net-core-3x-sample-handler-with-custom-status-code'></a>
-```cs
-public class SampleHandlerWithCustomStatusCode : ICompositionRequestsHandler
-{
-    [HttpGet("/sample/{id}")]
-    public Task Handle(HttpRequest request)
-    {
-        var response = request.HttpContext.Response;
-        response.StatusCode = (int)HttpStatusCode.Forbidden;
+> NOTE: ServiceComposer uses regular ASP.NET Core attribute routing to configure routes for which composition support is required.
 
-        return Task.CompletedTask;
-    }
-}
-```
-<sup><a href='/src/Snippets.NetCore3x/SampleHandler/SampleHandler.cs#L33-L45' title='File snippet `net-core-3x-sample-handler-with-custom-status-code` was extracted from'>snippet source</a> | <a href='#snippet-net-core-3x-sample-handler-with-custom-status-code' title='Navigate to start of snippet `net-core-3x-sample-handler-with-custom-status-code`'>anchor</a></sup>
-<!-- endSnippet -->
+In this brief sample the view model instance returned by `GetComposedResponseModel()` is a C# `dynamic` object. `dynamic` objects are handy because they allow requests handlers to be fully independent from each other, they share nothing. ServiceComposer supports using strongly typed view models in case they are preferred. They come with the advantage of strong typing and compilers checks, and the disadvantage of a little coupling. Refer to the [view model factory documentation](docs/view-model-factory) for more information.
 
-NOTE: Requests handlers are executed in parallel in a non-deterministic way, setting the response code in more than one handler can have unpredictable effects.
+## Documentation and supported platforms
 
-### ASP.NET Core 2.x
+ServiceComposer is available for the following platforms:
 
-Create a new .NET Core console project and add a reference to the following Nuget packages:
+- ASP.NET Core 3.x and .NET 5: [documentation is available in the docs folder](docs)
+- ASP.NET Core 2.x: [documentation is available in the docs/asp-net-core-2x folder](docs/asp-net-core-2x) (.NET Standard 2.0 compatible)
 
-* `Microsoft.AspNetCore`
-* `Microsoft.AspNetCore.Routing`
-* `ServiceComposer.AspNetCore`
+> Note: Support for ASP.NET Core 2.x has been deprecated in version 1.8.0 and will be removed in 2.0.0.
 
-Configure the `Startup` class like follows:
+## Philosophy
 
-<!-- snippet: net-core-2x-sample-startup -->
-<a id='snippet-net-core-2x-sample-startup'></a>
-```cs
-public class Startup
-{
-    public void ConfigureServices(IServiceCollection services)
-    {
-        services.AddRouting();
-        services.AddViewModelComposition();
-    }
+### Service boundaries
 
-    public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory)
-    {
-        app.RunCompositionGateway(routeBuilder =>
-        {
-            routeBuilder.MapComposableGet("{controller}/{id:int}");
-        });
-    }
-}
-```
-<sup><a href='/src/Snippets.NetCore2x/Startup.cs#L9-L26' title='File snippet `net-core-2x-sample-startup` was extracted from'>snippet source</a> | <a href='#snippet-net-core-2x-sample-startup' title='Navigate to start of snippet `net-core-2x-sample-startup`'>anchor</a></sup>
-<!-- endSnippet -->
+When building systems based on SOA principles, service boundaries are key, if not THE key aspect. If we get service boundaries wrong, the end result has the risk to be, in the best case, a distributed monolith, and in the worst one, a complete failure.
 
-> Note: define routes so to match your project needs. `ServiceComposer` adds provides all the required `MapComposable*` `IRouteBuilder` extension methods to map routes for every HTTP supported Verb.
+> Service boundaries identification is a challenge on its own; it requires a lot of business domain knowledge and a lot of confidence with high-level design techniques. Other than that, technical challenges might drive the solution design in the wrong direction due to the lack of technical solutions to problems foreseen while defining service boundaries.
 
-Define one or more classes implementing either the `IHandleRequests` or the `ISubscribeToCompositionEvents` based on your needs.
+The transition from the user mental model, described by domain experts, to the service boundaries architectural model in the SOA space raises many different concerns. If domain entities, as defined by domain experts, are split among several services:
 
-> Make sure the assemblies containing requests handlers and events subscribers are available to the composition gateway. By adding a reference or by simply dropping assemblies in the `bin` directory.
+- how can we then display to users what they need to visualize?
+- when systems need to make decisions, how can they “query” data required to make that decision, stored in many different services?
 
-More details on how to implement `IHandleRequests` and `ISubscribeToCompositionEvents` are available in the following articles:
+This type of question leads systems to be designed using rich events, and not thin ones, to share data between services and at the same to share data with cache-like things, such as Elastic Search, to satisfy UI query/visualization needs.
 
-* [ViewModel Composition: show me the code!](https://milestone.topics.it/view-model-composition/2019/03/06/viewmodel-composition-show-me-the-code.html)
-* [The ViewModels Lists Composition Dance](https://milestone.topics.it/view-model-composition/2019/03/21/the-viewmodels-lists-composition-dance.html)
+This is the beginning of a road that can only lead to a distributed monolith, where data ownership is a lost concept and every change impacts and breaks the whole system. In such a scenario, it’s very easy to blame SOA and the toolset.
 
-#### Custom HTTP status codes in ASP.NET Core 2.x
+ViewModel Composition techniques are designed to address all these concerns. ViewModel Composition brings the separation of concerns, designed at the back-end, to the front-end.
 
-The response status code can be set in requests handlers and it'll be honored by the composition pipeline. To set a custom response status code the following snippet can be used:
-
-<!-- snippet: net-core-2x-sample-handler-with-custom-status-code -->
-<a id='snippet-net-core-2x-sample-handler-with-custom-status-code'></a>
-```cs
-public class SampleHandlerWithCustomStatusCode : IHandleRequests
-{
-    public bool Matches(RouteData routeData, string httpVerb, HttpRequest request)
-    {
-        return true;
-    }
-
-    public Task Handle(string requestId, dynamic vm, RouteData routeData, HttpRequest request)
-    {
-        var response = request.HttpContext.Response;
-        response.StatusCode = (int)HttpStatusCode.Forbidden;
-
-        return Task.CompletedTask;
-    }
-}
-```
-<sup><a href='/src/Snippets.NetCore2x/SampleHandler/SampleHandler.cs#L9-L25' title='File snippet `net-core-2x-sample-handler-with-custom-status-code` was extracted from'>snippet source</a> | <a href='#snippet-net-core-2x-sample-handler-with-custom-status-code' title='Navigate to start of snippet `net-core-2x-sample-handler-with-custom-status-code`'>anchor</a></sup>
-<!-- endSnippet -->
-
-NOTE: Requests handlers are executed in parallel in a non-deterministic way, setting the response code in more than one handler can have unpredictable effects.
-
-### MVC and Web API support
-
-For information on how to host the Composition Gateway in a ASP.Net COre MVC application, please, refer to the [`ServiceComposer.AspNetCore.Mvc` package](https://github.com/ServiceComposer/ServiceComposer.AspNetCore.Mvc).
-
-### Icon
-
-[API](‪https://thenounproject.com/term/api/883169‬) by [Guilherme Simoes](https://thenounproject.com/uberux/) from [the Noun Project](https://thenounproject.com/).
+For more details and the philosophy behind a Composition Gateway, refer to the [ViewModel Composition series](https://milestone.topics.it/categories/view-model-composition) of article available on [milestone.topics.it](https://milestone.topics.it/).

@@ -1,13 +1,21 @@
-﻿#if NETCOREAPP3_1
+﻿#if NETCOREAPP3_1 || NET5_0
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Mime;
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
-using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -15,24 +23,83 @@ namespace ServiceComposer.AspNetCore
 {
     class CompositionEndpointBuilder : EndpointBuilder
     {
-        private readonly Type[] _compositionHandlers;
+        private readonly bool useOutputFormatters;
+        private readonly Dictionary<ResponseCasing, JsonSerializerSettings> casingToSettingsMappings = new();
+
         public RoutePattern RoutePattern { get; set; }
 
         public int Order { get; set; }
 
-        public CompositionEndpointBuilder(RoutePattern routePattern, IEnumerable<Type> compositionHandlers, int order)
+        public ResponseCasing DefaultResponseCasing { get; }
+
+        public CompositionEndpointBuilder(RoutePattern routePattern, Type[] componentsTypes, int order, ResponseCasing defaultResponseCasing, bool useOutputFormatters)
         {
-            _compositionHandlers = compositionHandlers.ToArray();
+            this.useOutputFormatters = useOutputFormatters;
+            Validate(routePattern, componentsTypes);
+
+            casingToSettingsMappings.Add(ResponseCasing.PascalCase, new JsonSerializerSettings());
+            casingToSettingsMappings.Add(ResponseCasing.CamelCase, new JsonSerializerSettings() {ContractResolver = new CamelCasePropertyNamesContractResolver()});
+
             RoutePattern = routePattern;
             Order = order;
+            DefaultResponseCasing = defaultResponseCasing;
             RequestDelegate = async context =>
             {
-                var viewModel = await CompositionHandler.HandleComposableRequest(context, _compositionHandlers);
+                var viewModel = await CompositionHandler.HandleComposableRequest(context, componentsTypes);
                 if (viewModel != null)
                 {
-                    var json = (string) JsonConvert.SerializeObject(viewModel, GetSettings(context));
-                    context.Response.ContentType = "application/json; charset=utf-8";
-                    await context.Response.WriteAsync(json);
+                    if (useOutputFormatters)
+                    {
+                        OutputFormatterSelector formatterSelector;
+                        IHttpResponseStreamWriterFactory writerFactory;
+                        IOptions<MvcOptions> options;
+                        try
+                        {
+                            formatterSelector = context.RequestServices.GetRequiredService<OutputFormatterSelector>();
+                            writerFactory = context.RequestServices.GetRequiredService<IHttpResponseStreamWriterFactory>();
+                            options = context.RequestServices.GetRequiredService<IOptions<MvcOptions>>();
+                        }
+                        catch (InvalidOperationException e)
+                        {
+                            throw new InvalidOperationException("Unable to resolve one of the services required to support output formatting. " +
+                                                                "Make sure the application is configured to use MVC services by calling either " +
+                                                                $"services.{nameof(MvcServiceCollectionExtensions.AddControllers)}(), or " +
+                                                                $"services.{nameof(MvcServiceCollectionExtensions.AddControllersWithViews)}(), or " +
+                                                                $"services.{nameof(MvcServiceCollectionExtensions.AddMvc)}(), or " +
+                                                                $"services.{nameof(MvcServiceCollectionExtensions.AddRazorPages)}().", e);
+                        }
+
+                        var outputFormatterWriteContext = new OutputFormatterWriteContext(context, writerFactory.CreateWriter, viewModel.GetType(), viewModel);
+
+                        if (!context.Request.Headers.TryGetValue(HeaderNames.Accept, out var accept))
+                        {
+                            accept = MediaTypeNames.Application.Json;
+                        }
+
+                        var mediaTypes = new MediaTypeCollection
+                        {
+                            accept
+                        };
+
+                        //TODO: log list of configured formatters
+                        var selectedFormatter = formatterSelector.SelectFormatter(
+                            outputFormatterWriteContext,
+                            options.Value.OutputFormatters, mediaTypes);
+                        if (selectedFormatter == null)
+                        {
+                            //TODO: log
+                            context.Response.StatusCode = StatusCodes.Status406NotAcceptable;
+                            return;
+                        }
+
+                        await selectedFormatter.WriteAsync(outputFormatterWriteContext);
+                    }
+                    else
+                    {
+                        var json = (string) JsonConvert.SerializeObject(viewModel, GetSettings(context));
+                        context.Response.ContentType = "application/json; charset=utf-8";
+                        await context.Response.WriteAsync(json);
+                    }
                 }
                 else
                 {
@@ -41,24 +108,54 @@ namespace ServiceComposer.AspNetCore
             };
         }
 
+        private void Validate(RoutePattern routePattern, Type[] componentsTypes)
+        {
+            var endpointScopedViewModelFactoriesCount = componentsTypes.Count(t => typeof(IEndpointScopedViewModelFactory).IsAssignableFrom(t));
+            if (endpointScopedViewModelFactoriesCount > 1)
+            {
+                var message = $"Only one {nameof(IEndpointScopedViewModelFactory)} is allowed per endpoint." +
+                              $" Endpoint '{routePattern}' is bound to more than one view model factory.";
+                throw new NotSupportedException(message);
+            }
+        }
+
         JsonSerializerSettings GetSettings(HttpContext context)
         {
-            if (!context.Request.Headers.TryGetValue("Accept-Casing", out StringValues casing))
+            ResponseCasing casing = DefaultResponseCasing;
+            if (context.Request.Headers.TryGetValue("Accept-Casing", out var requestedCasing))
             {
-                casing = "casing/camel";
+                switch (requestedCasing)
+                {
+                    case "casing/pascal":
+                        casing = ResponseCasing.PascalCase;
+                        break;
+                    case "casing/camel":
+                        casing = ResponseCasing.CamelCase;
+                        break;
+                    default:
+                        throw new NotSupportedException(
+                            $"Requested casing ({requestedCasing}) is not supported, " +
+                            $"supported values are: 'casing/pascal' or 'casing/camel'.");
+                }
             }
 
-            switch (casing)
+            JsonSerializerSettings customSettings = null;
+            var customSettingProvider = context.RequestServices.GetService<Func<HttpRequest, JsonSerializerSettings>>();
+            if (customSettingProvider != null)
             {
-                case "casing/pascal":
-                    return new JsonSerializerSettings();
-
-                default: // "casing/camel":
-                    return new JsonSerializerSettings()
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver()
-                    };
+                customSettings = customSettingProvider(context.Request);
+                if (customSettings != null && casing == ResponseCasing.CamelCase && customSettings.ContractResolver is not CamelCasePropertyNamesContractResolver)
+                {
+                    throw new ArgumentException($"Current HttpRequest is requesting camel case serialization. " +
+                                                $"The supplied custom settings are not using as ContractResolver an " +
+                                                $"instance of {nameof(CamelCasePropertyNamesContractResolver)}. Either " +
+                                                $"configure custom settings to use {nameof(CamelCasePropertyNamesContractResolver)} " +
+                                                $"as contract resolver by setting the property ContractResolver, or change the request " +
+                                                $"casing to be pascal case.");
+                }
             }
+
+            return customSettings ?? casingToSettingsMappings[casing];
         }
 
         public override Endpoint Build()

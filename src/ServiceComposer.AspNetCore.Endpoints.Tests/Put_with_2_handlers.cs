@@ -32,7 +32,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestStrinHandler : ICompositionRequestsHandler
+        class TestStringHandler : ICompositionRequestsHandler
         {
             [HttpPut("/sample/{id}")]
             public async Task Handle(HttpRequest request)
@@ -61,15 +61,16 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                     services.AddViewModelComposition(options =>
                     {
                         options.AssemblyScanner.Disable();
-                        options.RegisterCompositionHandler<TestStrinHandler>();
+                        options.RegisterCompositionHandler<TestStringHandler>();
                         options.RegisterCompositionHandler<TestIntegerHandler>();
+                        options.EnableWriteSupport();
                     });
                     services.AddRouting();
                 },
                 configure: app =>
                 {
                     app.UseRouting();
-                    app.UseEndpoints(builder => builder.MapCompositionHandlers(enableWriteSupport: true));
+                    app.UseEndpoints(builder => builder.MapCompositionHandlers());
                 }
             ).CreateClient();
 
