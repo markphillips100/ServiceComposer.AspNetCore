@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -11,10 +13,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class When_adding_endpoint_builder_customizations
     {
-        class TestGetIntegerHandler : ICompositionRequestsHandler
+        class TestGetIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
                 return Task.CompletedTask;
             }
@@ -35,7 +37,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                     {
                         options.AssemblyScanner.Disable();
                         options.RegisterCompositionHandler<TestGetIntegerHandler>();
-                        options.ResponseSerialization.UseOutputFormatters = true;
                     });
                     services.AddRouting();
                     services.AddControllers()

@@ -2,16 +2,17 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
 namespace Snippets.NetCore3x.BasicUsage
 {
     // begin-snippet: basic-usage-marketing-handler
-    public class MarketingProductInfo: ICompositionRequestsHandler
+    public class MarketingProductInfo: ICompositionRequestsHandler<IHttpCompositionContext>
     {
         [HttpGet("/product/{id}")]
-        public Task Handle(HttpRequest request)
+        public Task Handle(IHttpCompositionContext compositionContext)
         {
-            var vm = request.GetComposedResponseModel();
+            var vm = compositionContext.ViewModel;
 
             //retrieve product details from the marketing database or service
             vm.ProductName = "Sample product";

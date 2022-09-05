@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -13,24 +14,24 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
     {
         static string expectedString = "this is a string value";
         static int expectedNumber = 32;
-        class TestIntegerHandler : ICompositionRequestsHandler
+        class TestIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpDelete("/sample/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.ANumber = expectedNumber;
 
                 return Task.CompletedTask;
             }
         }
 
-        class TestStringHandler : ICompositionRequestsHandler
+        class TestStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpDelete("/sample/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.AString = expectedString;
 
                 return Task.CompletedTask;
@@ -50,9 +51,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.AssemblyScanner.Disable();
                         options.RegisterCompositionHandler<TestStringHandler>();
                         options.RegisterCompositionHandler<TestIntegerHandler>();
-                        options.EnableWriteSupport();
                     });
                     services.AddRouting();
+                    services.AddControllers()
+                        .AddNewtonsoftJson();
                 },
                 configure: app =>
                 {
@@ -60,8 +62,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                     app.UseEndpoints(builder => builder.MapCompositionHandlers());
                 }
             ).CreateClient();
-
-            client.DefaultRequestHeaders.Add("Accept-Casing", "casing/pascal");
 
             // Act
             var response = await client.DeleteAsync("/sample/1");

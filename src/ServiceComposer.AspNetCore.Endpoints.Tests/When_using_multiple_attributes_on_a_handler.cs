@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -17,14 +19,14 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class When_using_multiple_attributes_on_a_handler
     {
-        public class MultipleAttributesOfDifferentTypesHandler : ICompositionRequestsHandler
+        public class MultipleAttributesOfDifferentTypesHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpPost("/multiple/attributes")]
             [HttpGet("/multiple/attributes/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
-                vm.RequestPath = request.Path;
+                var vm = compositionContext.ViewModel;
+                vm.RequestPath = compositionContext.HttpRequest.Path;
 
                 return Task.CompletedTask;
             }
@@ -70,14 +72,14 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             //Assert.True(composedResponse.IsSuccessStatusCode);
         }
         
-        public class MultipleGetAttributesDifferentTemplatesHandler : ICompositionRequestsHandler
+        public class MultipleGetAttributesDifferentTemplatesHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/multiple/attributes")]
             [HttpGet("/multiple/attributes/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
-                vm.RequestPath = request.Path;
+                var vm = compositionContext.ViewModel;
+                vm.RequestPath = compositionContext.HttpRequest.Path;
 
                 return Task.CompletedTask;
             }
@@ -129,69 +131,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             {
                 Interlocked.Increment(ref invocationCount);
             }
-        }
-        
-        class InvocationCountViewModelFactory : IViewModelFactory
-        {
-            public object CreateViewModel(HttpContext httpContext, ICompositionContext compositionContext)
-            {
-                return new InvocationCountViewModel();
-            }
-        }
-        
-        public class MultipleGetAttributesSameTemplateHandler : ICompositionRequestsHandler
-        {
-            [HttpGet("/multiple/attributes")]
-            [HttpGet("/multiple/attributes")]
-            public Task Handle(HttpRequest request)
-            {
-                var vm = request.GetComposedResponseModel<InvocationCountViewModel>();
-                vm.IncrementInvocationCount();
-
-                return Task.CompletedTask;
-            }
-        }
-
-        [Fact]
-        public async Task If_attributes_are_of_the_same_type_and_same_template_handler_should_be_invoked_multiple_times()
-        {
-            // Arrange
-            var client =
-                new SelfContainedWebApplicationFactoryWithWebHost<Dummy>
-                (
-                    configureServices: services =>
-                    {
-                        services.AddViewModelComposition(options =>
-                        {
-                            options.AssemblyScanner.Disable();
-                            options.RegisterGlobalViewModelFactory<InvocationCountViewModelFactory>();
-                            options.RegisterCompositionHandler<MultipleGetAttributesSameTemplateHandler>();
-                        });
-                        services.AddControllers();
-                        services.AddRouting();
-                    },
-                    configure: app =>
-                    {
-                        app.UseRouting();
-                        app.UseEndpoints(builder =>
-                        {
-                            builder.MapCompositionHandlers();
-                            builder.MapControllers();
-                        });
-                    }
-                ).CreateClient();
-
-            // Act
-            var composedResponse = await client.GetAsync("/multiple/attributes");
-
-            // Assert
-            Assert.True(composedResponse.IsSuccessStatusCode);
-            
-            var responseString = await composedResponse.Content.ReadAsStringAsync();
-            var responseObj = JObject.Parse(responseString);
-            var invocationCount = responseObj?.GetValue("invocationCount")?.Value<int>();
-            
-            Assert.Equal(2, invocationCount);
         }
     }
 }

@@ -6,17 +6,18 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Newtonsoft.Json.Linq;
 using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
 namespace Snippets.NetCore3x.ModelBinding
 {
-    class RawBodyUsageHandler : ICompositionRequestsHandler
+    class RawBodyUsageHandler : ICompositionRequestsHandler<IHttpCompositionContext>
     {
         // begin-snippet: model-binding-raw-body-usage
         [HttpPost("/sample/{id}")]
-        public async Task Handle(HttpRequest request)
+        public async Task Handle(IHttpCompositionContext compositionContext)
         {
-            request.Body.Position = 0;
-            using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true );
+            compositionContext.HttpRequest.Body.Position = 0;
+            using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true );
             var body = await reader.ReadToEndAsync();
             var content = JObject.Parse(body);
 
@@ -25,13 +26,13 @@ namespace Snippets.NetCore3x.ModelBinding
         // end-snippet
     }
 
-    class RawRouteDataUsageHandler : ICompositionRequestsHandler
+    class RawRouteDataUsageHandler : ICompositionRequestsHandler<IHttpCompositionContext>
     {
         // begin-snippet: model-binding-raw-route-data-usage
         [HttpPost("/sample/{id}")]
-        public Task Handle(HttpRequest request)
+        public Task Handle(IHttpCompositionContext compositionContext)
         {
-            var routeData = request.HttpContext.GetRouteData();
+            var routeData = compositionContext.HttpRequest.HttpContext.GetRouteData();
             var id = int.Parse(routeData.Values["id"].ToString());
 
             //use the id value as needed

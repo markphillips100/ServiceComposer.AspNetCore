@@ -4,16 +4,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
 namespace Snippets.NetCore3x.ActionResult
 {
     // begin-snippet: action-results
-    public class UseSetActionResultHandler : ICompositionRequestsHandler
+    public class UseSetActionResultHandler : ICompositionRequestsHandler<IHttpCompositionContext>
     {
         [HttpGet("/product/{id}")]
-        public Task Handle(HttpRequest request)
+        public Task Handle(IHttpCompositionContext compositionContext)
         {
-            var id = request.RouteValues["id"];
+            var id = compositionContext.HttpRequest.RouteValues["id"];
 
             //validate the id format
 
@@ -23,7 +24,7 @@ namespace Snippets.NetCore3x.ActionResult
             });
             var result = new BadRequestObjectResult(problems);
 
-            request.SetActionResult(result);
+            compositionContext.SetActionResult(result);
 
             return Task.CompletedTask;
         }
@@ -35,10 +36,7 @@ namespace Snippets.NetCore3x.ActionResult
         public void ConfigureServices(IServiceCollection services)
         {
             // begin-snippet: action-results-required-config
-            services.AddViewModelComposition(options =>
-            {
-                options.ResponseSerialization.UseOutputFormatters = true;
-            });
+            services.AddViewModelComposition();
             // end-snippet
         }
     }

@@ -1,37 +1,13 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Dynamic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
 namespace ServiceComposer.AspNetCore
 {
-#pragma warning disable 618
-    class DynamicViewModel : DynamicObject, IPublishCompositionEvents, ICompositionEventsPublisher, ICompositionContext
-#pragma warning restore 618
+    public sealed class DynamicViewModel : DynamicObject
     {
-        readonly ILogger<DynamicViewModel> _logger;
-        readonly CompositionContext _compositionContext;
         readonly ConcurrentDictionary<string, object> _properties = new();
 
-        public DynamicViewModel(ILogger<DynamicViewModel> logger, CompositionContext compositionContext)
-        {
-            _logger = logger;
-            _compositionContext = compositionContext;
-            _compositionContext.CurrentViewModel = this;
-        }
-
-#pragma warning disable 618
-        public void Subscribe<TEvent>(EventHandler<TEvent> handler)
-#pragma warning restore 618
-        {
-            _compositionContext.Subscribe(handler);
-        }
-
-        public void Subscribe<TEvent>(CompositionEventHandler<TEvent> handler)
-        {
-            _compositionContext.Subscribe(handler);
-        }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result) => _properties.TryGetValue(binder.Name, out result);
 
@@ -47,10 +23,6 @@ namespace ServiceComposer.AspNetCore
 
             switch (binder.Name)
             {
-                case "RaiseEvent":
-                    _logger.LogWarning(message: "dynamic.RaiseEvent is obsolete. It'll be treated as an error starting v2 and removed in v3. Use HttpRequest.GetCompositionContext() to raise events.");
-                    result = RaiseEventImpl(args[0]);
-                    return true;
                 case "Merge":
                     result = MergeImpl((IDictionary<string, object>) args[0]);
                     return true;
@@ -66,13 +38,7 @@ namespace ServiceComposer.AspNetCore
                 yield return item;
             }
 
-            yield return "RaiseEvent";
             yield return "Merge";
-        }
-
-        Task RaiseEventImpl(object @event)
-        {
-            return _compositionContext.RaiseEvent(@event);
         }
 
         DynamicViewModel MergeImpl(IDictionary<string, object> source)
@@ -84,12 +50,5 @@ namespace ServiceComposer.AspNetCore
 
             return this;
         }
-
-        Task ICompositionContext.RaiseEvent(object @event)
-        {
-            return _compositionContext.RaiseEvent(@event);
-        }
-
-        string ICompositionContext.RequestId => _compositionContext.RequestId;
     }
 }

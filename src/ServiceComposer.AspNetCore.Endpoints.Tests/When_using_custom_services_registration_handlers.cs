@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -10,10 +11,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class When_using_custom_services_registration_handlers
     {
-        public class TestNoOpHandler : ICompositionRequestsHandler
+        public class TestNoOpHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
                 return Task.CompletedTask;
             }

@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Castle.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceComposer.AspNetCore.Configuration;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using TestClassLibraryWithHandlers;
 using Xunit;
@@ -47,6 +49,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         };
                     });
                     services.AddRouting();
+                    services.AddControllers().AddNewtonsoftJson();
                 },
                 configure: app =>
                 {
@@ -112,6 +115,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         };
                     });
                     services.AddRouting();
+                    services.AddControllers().AddNewtonsoftJson();
                 },
                 configure: app =>
                 {
@@ -215,54 +219,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             
             // Assert
             Assert.Same(config, _customizationsThatAccessTheConfigurationConfig);
-        }
-
-        [Fact]
-        public void ViewModel_preview_handlers_are_registered_automatically()
-        {
-            IEnumerable<IViewModelPreviewHandler> expectedPreviewHandlers = null;
-
-            // Arrange
-            var client = new SelfContainedWebApplicationFactoryWithWebHost<When_using_assembly_scanner>
-            (
-                configureServices: services =>
-                {
-                    services.AddViewModelComposition(options =>
-                    {
-                        options.TypesFilter = type =>
-                        {
-                            if (type.Assembly.FullName.Contains("TestClassLibraryWithHandlers"))
-                            {
-                                return true;
-                            }
-
-                            if (type == typeof(CustomizationsThatAccessTheConfiguration))
-                            {
-                                return false;
-                            }
-
-                            if (type.IsNestedTypeOf<When_using_assembly_scanner>())
-                            {
-                                return true;
-                            }
-
-                            return false;
-                        };
-                    });
-                    services.AddRouting();
-                },
-                configure: app =>
-                {
-                    app.UseRouting();
-                    app.UseEndpoints(builder => builder.MapCompositionHandlers());
-
-                    expectedPreviewHandlers = app.ApplicationServices.GetServices<IViewModelPreviewHandler>();
-                }
-            ).CreateClient();
-
-            // Assert
-            Assert.NotNull(expectedPreviewHandlers);
-            Assert.True(expectedPreviewHandlers.Single().GetType() == typeof(TestPreviewHandler));
         }
     }
 }

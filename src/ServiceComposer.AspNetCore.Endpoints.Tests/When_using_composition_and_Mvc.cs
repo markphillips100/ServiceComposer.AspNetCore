@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -24,7 +27,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 
     public class When_using_composition_and_Mvc
     {
-        class TestGetIntegerHandler : ICompositionRequestsHandler
+        class TestGetIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             class Model
             {
@@ -32,20 +35,20 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpGet("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                var model = await request.Bind<Model>();
-                var vm = request.GetComposedResponseModel();
+                var model = await compositionContext.HttpRequest.Bind<Model>();
+                var vm = compositionContext.ViewModel;
                 vm.ANumber = model.id;
             }
         }
 
-        class TestGetStringHandler : ICompositionRequestsHandler
+        class TestGetStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
                 return Task.CompletedTask;
             }
@@ -64,54 +67,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.AssemblyScanner.Disable();
                         options.RegisterCompositionHandler<TestGetStringHandler>();
                         options.RegisterCompositionHandler<TestGetIntegerHandler>();
-                    });
-                    services.AddControllers();
-                    services.AddRouting();
-                },
-                configure: app =>
-                {
-                    app.UseRouting();
-                    app.UseEndpoints(builder =>
-                    {
-                        builder.MapCompositionHandlers();
-                        builder.MapControllers();
-                    });
-                }
-            ).CreateClient();
-
-            client.DefaultRequestHeaders.Add("Accept-Casing", "casing/pascal");
-
-            // Act
-            var composedResponse = await client.GetAsync("/sample/1");
-            var apiResponse = await client.GetAsync("/api/sample/32");
-
-            // Assert
-            Assert.True(composedResponse.IsSuccessStatusCode);
-            Assert.True(apiResponse.IsSuccessStatusCode);
-
-            var responseObj = JObject.Parse(await composedResponse.Content.ReadAsStringAsync());
-
-            Assert.Equal("sample", responseObj?.SelectToken("AString")?.Value<string>());
-            Assert.Equal(1, responseObj?.SelectToken("ANumber")?.Value<int>());
-
-            var apiResponsObj = await apiResponse.Content.ReadAsStringAsync();
-            Assert.Equal(32, int.Parse(apiResponsObj));
-        }
-
-        [Fact]
-        public async Task Both_composition_endpoint_and_Mvc_endpoint_return_expected_values_using_output_formatters()
-        {
-            // Arrange
-            var client = new SelfContainedWebApplicationFactoryWithWebHost<Dummy>
-            (
-                configureServices: services =>
-                {
-                    services.AddViewModelComposition(options =>
-                    {
-                        options.AssemblyScanner.Disable();
-                        options.RegisterCompositionHandler<TestGetStringHandler>();
-                        options.RegisterCompositionHandler<TestGetIntegerHandler>();
-                        options.ResponseSerialization.UseOutputFormatters = true;
                     });
                     services.AddControllers().AddNewtonsoftJson();
                     services.AddRouting();

@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -17,32 +19,32 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class Patch_with_2_handlers
     {
-        class TestIntegerHandler : ICompositionRequestsHandler
+        class TestIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpPatch("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                request.Body.Position = 0;
-                using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
+                compositionContext.HttpRequest.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.ANumber = content?.SelectToken("ANumber")?.Value<int>();
             }
         }
 
-        class TestStringHandler : ICompositionRequestsHandler
+        class TestStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpPatch("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                request.Body.Position = 0;
-                using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true );
+                compositionContext.HttpRequest.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true );
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.AString = content?.SelectToken("AString")?.Value<string>();
             }
         }
@@ -63,58 +65,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.AssemblyScanner.Disable();
                         options.RegisterCompositionHandler<TestStringHandler>();
                         options.RegisterCompositionHandler<TestIntegerHandler>();
-                        options.EnableWriteSupport();
-                    });
-                    services.AddRouting();
-                },
-                configure: app =>
-                {
-                    app.UseRouting();
-                    app.UseEndpoints(builder => builder.MapCompositionHandlers());
-                }
-            ).CreateClient();
-
-            client.DefaultRequestHeaders.Add("Accept-Casing", "casing/pascal");
-
-            dynamic model = new ExpandoObject();
-            model.AString = expectedString;
-            model.ANumber = expectedNumber;
-
-            var json = (string) JsonConvert.SerializeObject(model);
-            var stringContent = new StringContent(json, Encoding.UTF8, MediaTypeNames.Application.Json);
-            stringContent.Headers.ContentLength = json.Length;
-
-            // Act
-            var response = await client.PatchAsync("/sample/1", stringContent);
-
-            // Assert
-            Assert.True(response.IsSuccessStatusCode);
-
-            var responseString = await response.Content.ReadAsStringAsync();
-            var responseObj = JObject.Parse(responseString);
-
-            Assert.Equal(expectedString, responseObj?.SelectToken("AString")?.Value<string>());
-            Assert.Equal(expectedNumber, responseObj?.SelectToken("ANumber")?.Value<int>());
-        }
-
-        [Fact]
-        public async Task Returns_expected_response_using_output_formatters()
-        {
-            // Arrange
-            var expectedString = "this is a string value";
-            var expectedNumber = 32;
-
-            var client = new SelfContainedWebApplicationFactoryWithWebHost<Patch_with_2_handlers>
-            (
-                configureServices: services =>
-                {
-                    services.AddViewModelComposition(options =>
-                    {
-                        options.AssemblyScanner.Disable();
-                        options.RegisterCompositionHandler<TestStringHandler>();
-                        options.RegisterCompositionHandler<TestIntegerHandler>();
-                        options.EnableWriteSupport();
-                        options.ResponseSerialization.UseOutputFormatters = true;
                     });
                     services.AddRouting();
                     services.AddControllers().AddNewtonsoftJson();

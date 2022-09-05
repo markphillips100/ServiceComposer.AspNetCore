@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -16,7 +19,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
     {
         const string expectedError = "I'm not sure I like the Id property value";
 
-        class TestGetIntegerHandler : ICompositionRequestsHandler
+        class TestGetIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             class Model
             {
@@ -24,9 +27,9 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpGet("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                var model = await request.Bind<Model>();
+                var model = await compositionContext.HttpRequest.Bind<Model>();
 
                 var problems = new ValidationProblemDetails(new Dictionary<string, string[]>() 
                 {
@@ -34,23 +37,23 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                 });
                 var result = new BadRequestObjectResult(problems);
 
-                request.SetActionResult(result);
+                compositionContext.SetActionResult(result);
             }
         }
 
-        class TestGetStringHandler : ICompositionRequestsHandler
+        class TestGetStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
                 return Task.CompletedTask;
             }
         }
 
         [Fact]
-        public async Task Returns_expected_bad_request_using_output_formatters()
+        public async Task Returns_expected_bad_request()
         {
             // Arrange
             var client = new SelfContainedWebApplicationFactoryWithWebHost<Dummy>
@@ -62,7 +65,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.AssemblyScanner.Disable();
                         options.RegisterCompositionHandler<TestGetStringHandler>();
                         options.RegisterCompositionHandler<TestGetIntegerHandler>();
-                        options.ResponseSerialization.UseOutputFormatters = true;
                     });
                     services.AddRouting();
                     services.AddControllers()
@@ -91,39 +93,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             var error = idErrors[0].Value<string>();
 
             Assert.Equal(expectedError, error);
-        }
-
-        [Fact]
-        public async Task Throws_if_output_formatters_are_not_enabled()
-        {
-            await Assert.ThrowsAsync<NotSupportedException>(async () => 
-            {
-                // Arrange
-                var client = new SelfContainedWebApplicationFactoryWithWebHost<Dummy>
-                (
-                    configureServices: services =>
-                    {
-                        services.AddViewModelComposition(options =>
-                        {
-                            options.AssemblyScanner.Disable();
-                            options.RegisterCompositionHandler<TestGetStringHandler>();
-                            options.RegisterCompositionHandler<TestGetIntegerHandler>();
-                            options.ResponseSerialization.UseOutputFormatters = false;
-                        });
-                        services.AddRouting();
-                        services.AddControllers()
-                            .AddNewtonsoftJson();
-                    },
-                    configure: app =>
-                    {
-                        app.UseRouting();
-                        app.UseEndpoints(builder => builder.MapCompositionHandlers());
-                    }
-                ).CreateClient();
-
-                // Act
-                var response = await client.GetAsync("/sample/1");
-            });
         }
     }
 }

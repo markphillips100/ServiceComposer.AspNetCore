@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -11,10 +12,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class Get_with_no_matching_handlers
     {
-        class EmptyResponseHandler : ICompositionRequestsHandler
+        class EmptyResponseHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/empty-response/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
                 return Task.CompletedTask;
             }
@@ -34,6 +35,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.RegisterCompositionHandler<EmptyResponseHandler>();
                     });
                     services.AddRouting();
+                    services.AddControllers().AddNewtonsoftJson();
                 },
                 configure: app =>
                 {

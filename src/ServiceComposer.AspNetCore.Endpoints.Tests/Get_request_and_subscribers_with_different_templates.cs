@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -13,41 +14,40 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
     {
         class TestEvent{}
 
-        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler
+        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
 
-                var ctx = request.GetCompositionContext();
-                await ctx.RaiseEvent(new TestEvent());
+                await compositionContext.RaiseEvent(new TestEvent());
             }
         }
 
-        class TestGetSubscriberNotUsedTemplate : ICompositionEventsSubscriber
+        class TestGetSubscriberNotUsedTemplate : ICompositionEventsSubscriber<IHttpCompositionContext>
         {
             [HttpGet("/this-is-never-used")]
-            public void Subscribe(ICompositionEventsPublisher publisher)
+            public void Subscribe(ICompositionEventsPublisher<IHttpCompositionContext> publisher)
             {
-                publisher.Subscribe<TestEvent>((@event, request) =>
+                publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
-                    var vm = request.GetComposedResponseModel();
+                    var vm = compositionContext.ViewModel;
                     vm.ThisShouldNeverBeAppended = "sample";
                     return Task.CompletedTask;
                 });
             }
         }
 
-        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber
+        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber<IHttpCompositionContext>
         {
             [HttpGet("/sample/{id}")]
-            public void Subscribe(ICompositionEventsPublisher publisher)
+            public void Subscribe(ICompositionEventsPublisher<IHttpCompositionContext> publisher)
             {
-                publisher.Subscribe<TestEvent>((@event, request) =>
+                publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
-                    var vm = request.GetComposedResponseModel();
+                    var vm = compositionContext.ViewModel;
                     vm.AnotherString = "sample";
                     return Task.CompletedTask;
                 });
@@ -70,6 +70,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.RegisterCompositionHandler<TestGetSubscriberNotUsedTemplate>();
                     });
                     services.AddRouting();
+                    services.AddControllers().AddNewtonsoftJson();
                 },
                 configure: app =>
                 {
@@ -78,7 +79,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                 }
             ).CreateClient();
 
-            client.DefaultRequestHeaders.Add("Accept-Casing", "casing/pascal");
             // Act
             var response = await client.GetAsync("/sample/1");
 

@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -11,7 +14,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class Get_with_2_handlers
     {
-        class TestGetIntegerHandler : ICompositionRequestsHandler
+        class TestGetIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             class Model
             {
@@ -19,27 +22,27 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpGet("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                var model = await request.Bind<Model>();
-                var vm = request.GetComposedResponseModel();
+                var model = await compositionContext.HttpRequest.Bind<Model>();
+                var vm = compositionContext.ViewModel;
                 vm.ANumber = model.id;
             }
         }
 
-        class TestGetStringHandler : ICompositionRequestsHandler
+        class TestGetStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
                 return Task.CompletedTask;
             }
         }
 
         [Fact]
-        public async Task Returns_expected_response()
+        public async Task Returns_expected_response_without_newtonsoft()
         {
             // Arrange
             var client = new SelfContainedWebApplicationFactoryWithWebHost<Dummy>
@@ -62,7 +65,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                 }
             ).CreateClient();
 
-            client.DefaultRequestHeaders.Add("Accept-Casing", "casing/pascal");
             // Act
             var response = await client.GetAsync("/sample/1");
 
@@ -70,14 +72,12 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             Assert.True(response.IsSuccessStatusCode);
 
             var responseString = await response.Content.ReadAsStringAsync();
-            var responseObj = JObject.Parse(responseString);
 
-            Assert.Equal("sample", responseObj?.SelectToken("AString")?.Value<string>());
-            Assert.Equal(1, responseObj?.SelectToken("ANumber")?.Value<int>());
+            Assert.Equal("{}", responseString);
         }
 
         [Fact]
-        public async Task Returns_expected_response_using_output_formatters()
+        public async Task Returns_expected_response()
         {
             // Arrange
             var client = new SelfContainedWebApplicationFactoryWithWebHost<Dummy>
@@ -89,7 +89,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.AssemblyScanner.Disable();
                         options.RegisterCompositionHandler<TestGetStringHandler>();
                         options.RegisterCompositionHandler<TestGetIntegerHandler>();
-                        options.ResponseSerialization.UseOutputFormatters = true;
                     });
                     services.AddRouting();
                     services.AddControllers()

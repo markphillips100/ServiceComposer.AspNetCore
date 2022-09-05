@@ -2,6 +2,7 @@
 using System.Net.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using ServiceComposer.AspNetCore.Configuration;
 
 namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {

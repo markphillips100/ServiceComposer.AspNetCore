@@ -1,10 +1,10 @@
 ﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 
 namespace ServiceComposer.AspNetCore
 {
-    public interface ICompositionRequestsHandler
+    public interface ICompositionRequestsHandler<TCompositionContext>
+        where TCompositionContext : ICompositionContext
     {
-        Task Handle(HttpRequest request);
+        Task Handle(TCompositionContext compositionContext);
     }
 }

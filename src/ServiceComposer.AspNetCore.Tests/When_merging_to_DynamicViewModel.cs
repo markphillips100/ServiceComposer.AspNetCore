@@ -1,8 +1,4 @@
-﻿using FakeItEasy;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using System.Dynamic;
-using Microsoft.Extensions.Logging;
+﻿using System.Dynamic;
 using Xunit;
 
 namespace ServiceComposer.AspNetCore.Tests
@@ -13,7 +9,7 @@ namespace ServiceComposer.AspNetCore.Tests
         public void ExpandoObject_properties_should_be_copied_over()
         {
             // Arrange
-            dynamic sut = new DynamicViewModel(A.Fake<ILogger<DynamicViewModel>>(), new CompositionContext("empty",A.Fake<RouteData>(), A.Fake<HttpRequest>()));
+            dynamic sut = new DynamicViewModel();
             dynamic source = new ExpandoObject();
             source.SomeProperty = "some value";
 
@@ -28,7 +24,7 @@ namespace ServiceComposer.AspNetCore.Tests
         public void Existing_properties_should_be_overwritten()
         {
             // Arrange
-            dynamic sut = new DynamicViewModel(A.Fake<ILogger<DynamicViewModel>>(), new CompositionContext("empty", A.Fake<RouteData>(), A.Fake<HttpRequest>()));
+            dynamic sut = new DynamicViewModel();
             sut.ExistingProperty = 10;
 
             dynamic source = new ExpandoObject();

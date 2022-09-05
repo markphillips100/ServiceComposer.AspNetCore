@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ServiceComposer.AspNetCore;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
 
 namespace Snippets.NetCore3x.ModelBinding
 {
@@ -20,13 +22,13 @@ namespace Snippets.NetCore3x.ModelBinding
     }
     // end-snippet
 
-    class ModelBindingUsageHandler : ICompositionRequestsHandler
+    class ModelBindingUsageHandler : ICompositionRequestsHandler<IHttpCompositionContext>
     {
         // begin-snippet: model-binding-bind-body-and-route-data
         [HttpPost("/sample/{id}")]
-        public async Task Handle(HttpRequest request)
+        public async Task Handle(IHttpCompositionContext compositionContext)
         {
-            var requestModel = await request.Bind<RequestModel>();
+            var requestModel = await compositionContext.HttpRequest.Bind<RequestModel>();
             var body = requestModel.Body;
             var aString = body.AString;
             var id = requestModel.id;

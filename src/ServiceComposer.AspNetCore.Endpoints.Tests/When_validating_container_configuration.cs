@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -12,14 +13,13 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class When_validating_container_configuration
     {
-        class EmptyResponseHandler : ICompositionRequestsHandler
+        class EmptyResponseHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpGet("/empty-response/{id}")]
-            public Task Handle(HttpRequest request)
+            public Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
-                var ctx = request.GetCompositionContext();
-                vm.RequestId = ctx.RequestId;
+                var vm = compositionContext.ViewModel;
+                vm.RequestId = compositionContext.RequestId;
 
                 return Task.CompletedTask;
             }
@@ -39,6 +39,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.RegisterCompositionHandler<EmptyResponseHandler>();
                     });
                     services.AddRouting();
+                    services.AddControllers().AddNewtonsoftJson();
                 },
                 configure: app =>
                 {
@@ -67,7 +68,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 
             var contentString = await response.Content.ReadAsStringAsync();
             dynamic body = JObject.Parse(contentString);
-            Assert.NotNull(body.requestId);
         }
     }
 }

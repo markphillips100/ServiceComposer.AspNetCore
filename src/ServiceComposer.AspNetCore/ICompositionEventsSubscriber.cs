@@ -1,7 +1,8 @@
 ﻿namespace ServiceComposer.AspNetCore
 {
-    public interface ICompositionEventsSubscriber
+    public interface ICompositionEventsSubscriber<TCompositionContext>
+        where TCompositionContext : ICompositionContext
     {
-        void Subscribe(ICompositionEventsPublisher publisher);
+        void Subscribe(ICompositionEventsPublisher<TCompositionContext> publisher);
     }
 }

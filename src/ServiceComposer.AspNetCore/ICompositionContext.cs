@@ -6,5 +6,7 @@ namespace ServiceComposer.AspNetCore
     {
         string RequestId { get; }
         Task RaiseEvent(object @event);
+        dynamic ViewModel { get; }
     }
+
 }

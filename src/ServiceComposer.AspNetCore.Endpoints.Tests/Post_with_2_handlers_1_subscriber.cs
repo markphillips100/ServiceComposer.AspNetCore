@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -59,7 +61,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.RegisterCompositionHandler<TestIntegerHandler_NO_ModelBinding>();
                         options.RegisterCompositionHandler<TestStringHandler>();
                         options.RegisterCompositionHandler<TestStringSubcriber>();
-                        options.ResponseSerialization.UseOutputFormatters = true;
                     },
                     ConfigureServices = services => services.AddControllers().AddNewtonsoftJson()
                 }
@@ -74,7 +75,6 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                         options.RegisterCompositionHandler<TestIntegerHandler_USE_ModelBinding>();
                         options.RegisterCompositionHandler<TestStringHandler>();
                         options.RegisterCompositionHandler<TestStringSubcriber>();
-                        options.ResponseSerialization.UseOutputFormatters = true;
                     },
                     ConfigureServices = services => { services.AddControllers().AddNewtonsoftJson(); }
                 }
@@ -86,25 +86,25 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             public string AValue { get; set; }
         }
 
-        class TestIntegerHandler_NO_ModelBinding : ICompositionRequestsHandler
+        class TestIntegerHandler_NO_ModelBinding : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpPost("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
 
-                request.Body.Position = 0;
-                using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
+                compositionContext.HttpRequest.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
                 vm.ANumber = content?.SelectToken("ANumber")?.Value<int>();
 
-                await vm.RaiseEvent(new TestEvent() {AValue = $"ANumber: {vm.ANumber}."});
+                await compositionContext.RaiseEvent(new TestEvent() {AValue = $"ANumber: {vm.ANumber}."});
             }
         }
 
-        class TestIntegerHandler_USE_ModelBinding : ICompositionRequestsHandler
+        class TestIntegerHandler_USE_ModelBinding : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             class ANumberModel
             {
@@ -112,39 +112,39 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpPost("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                var vm = request.GetComposedResponseModel();
-                var model = await request.Bind<BodyRequest<ANumberModel>>();
+                var vm = compositionContext.ViewModel;
+                var model = await compositionContext.HttpRequest.Bind<BodyRequest<ANumberModel>>();
                 vm.ANumber = model.Body.ANumber;
 
-                await vm.RaiseEvent(new TestEvent() {AValue = $"ANumber: {vm.ANumber}."});
+                await compositionContext.RaiseEvent(new TestEvent() {AValue = $"ANumber: {vm.ANumber}."});
             }
         }
 
-        class TestStringHandler : ICompositionRequestsHandler
+        class TestStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
         {
             [HttpPost("/sample/{id}")]
-            public async Task Handle(HttpRequest request)
+            public async Task Handle(IHttpCompositionContext compositionContext)
             {
-                request.Body.Position = 0;
-                using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
+                compositionContext.HttpRequest.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
-                var vm = request.GetComposedResponseModel();
+                var vm = compositionContext.ViewModel;
                 vm.AString = content?.SelectToken("AString")?.Value<string>();
             }
         }
 
-        class TestStringSubcriber : ICompositionEventsSubscriber
+        class TestStringSubcriber : ICompositionEventsSubscriber<IHttpCompositionContext>
         {
             [HttpPost("/sample/{id}")]
-            public void Subscribe(ICompositionEventsPublisher publisher)
+            public void Subscribe(ICompositionEventsPublisher<IHttpCompositionContext> publisher)
             {
-                publisher.Subscribe<TestEvent>((@event, request) =>
+                publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
-                    var vm = request.GetComposedResponseModel();
+                    var vm = compositionContext.ViewModel;
                     vm.AValue = @event.AValue;
 
                     return Task.CompletedTask;
@@ -167,11 +167,11 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                     services.AddViewModelComposition(options =>
                     {
                         options.AssemblyScanner.Disable();
-                        options.EnableWriteSupport();
 
                         variant.CompositionOptions?.Invoke(options);
                     });
                     services.AddRouting();
+                    services.AddControllers().AddNewtonsoftJson();
 
                     variant.ConfigureServices?.Invoke(services);
                 },
