@@ -1,32 +1,28 @@
 ﻿using System.Threading.Tasks;
-using FluentResults;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
+namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
 {
     /// <summary>
     /// This type is passed to subscribers only and wraps the regular context to prevent subscribers from raising events or subscribing again.
     /// </summary>
-    internal sealed class SubscriberObjectCompositionContext : IObjectCompositionContext, ICompositionEventsPublisher<IObjectCompositionContext>
+    internal sealed class SubscriberObjectCompositionContext<TResult> : IObjectCompositionContext<TResult>, ICompositionEventsPublisher<IObjectCompositionContext<TResult>>
     {
-        private ObjectCompositionContext _internal;
+        private ObjectCompositionContext<TResult> _internal;
 
-        public SubscriberObjectCompositionContext(ObjectCompositionContext @internal)
+        public SubscriberObjectCompositionContext(ObjectCompositionContext<TResult> @internal)
         {
             _internal = @internal;
         }
 
         public ObjectRequest Request => _internal.Request;
 
-        public Result Result => _internal.Result;
+        public TResult Result => _internal.Result;
 
         public string RequestId => _internal.RequestId;
 
         public dynamic ViewModel => _internal.ViewModel;
 
-        public void SetResult(Result result)
+        public void SetResult(TResult result)
         {
             _internal.SetResult(result);
         }
@@ -36,7 +32,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
             throw new System.InvalidOperationException("Subscribers cannot raise events.");
         }
 
-        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, IObjectCompositionContext> handler)
+        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, IObjectCompositionContext<TResult>> handler)
         {
             throw new System.InvalidOperationException("Subscribers cannot subscribe to more events.");
         }

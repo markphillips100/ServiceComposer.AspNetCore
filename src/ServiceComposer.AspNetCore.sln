@@ -14,6 +14,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snippets", "Snippets\Snippe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceComposer.AspNetCore.ObjectComposition.Tests", "ServiceComposer.AspNetCore.ObjectComposition.Tests\ServiceComposer.AspNetCore.ObjectComposition.Tests.csproj", "{1E3AC2AB-6BFC-4A69-A10C-A6E59105AEF7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceComposer.AspNetCore.FluentResultsProvider", "ServiceComposer.AspNetCore.FluentResultsProvider\ServiceComposer.AspNetCore.FluentResultsProvider.csproj", "{1F43B154-1A39-4689-B470-1E7AC96CC58E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{1E3AC2AB-6BFC-4A69-A10C-A6E59105AEF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E3AC2AB-6BFC-4A69-A10C-A6E59105AEF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E3AC2AB-6BFC-4A69-A10C-A6E59105AEF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F43B154-1A39-4689-B470-1E7AC96CC58E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F43B154-1A39-4689-B470-1E7AC96CC58E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F43B154-1A39-4689-B470-1E7AC96CC58E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F43B154-1A39-4689-B470-1E7AC96CC58E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

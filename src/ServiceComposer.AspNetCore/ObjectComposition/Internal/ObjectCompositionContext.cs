@@ -2,18 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using FluentResults;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
+namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
 {
-    internal sealed class ObjectCompositionContext : IObjectCompositionContext, ICompositionEventsPublisher<IObjectCompositionContext>
+    internal sealed class ObjectCompositionContext<TResult> : IObjectCompositionContext<TResult>, ICompositionEventsPublisher<IObjectCompositionContext<TResult>>
     {
-        private readonly ConcurrentDictionary<Type, List<CompositionEventHandler<object, IObjectCompositionContext>>> _compositionEventsSubscriptions = new();
+        private readonly ConcurrentDictionary<Type, List<CompositionEventHandler<object, IObjectCompositionContext<TResult>>>> _compositionEventsSubscriptions = new();
 
         public string RequestId { get; }
         public ObjectRequest Request { get; }
-        public Result Result { get; private set; }
+        public TResult Result { get; private set; }
         public dynamic ViewModel { get; }
 
         public ObjectCompositionContext(string requestId, ObjectRequest request, DynamicViewModel viewModel)
@@ -25,7 +23,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
 
         public Task RaiseEvent(object @event)
         {
-            var subscriberCompositionContextProxy = new SubscriberObjectCompositionContext(this);
+            var subscriberCompositionContextProxy = new SubscriberObjectCompositionContext<TResult>(this);
 
             if (_compositionEventsSubscriptions.TryGetValue(@event.GetType(), out var compositionHandlers))
             {
@@ -37,18 +35,18 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
             return Task.CompletedTask;
         }
 
-        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, IObjectCompositionContext> handler)
+        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, IObjectCompositionContext<TResult>> handler)
         {
             if (!_compositionEventsSubscriptions.TryGetValue(typeof(TEvent), out var handlers))
             {
-                handlers = new List<CompositionEventHandler<object, IObjectCompositionContext>>();
+                handlers = new List<CompositionEventHandler<object, IObjectCompositionContext<TResult>>>();
                 _compositionEventsSubscriptions.TryAdd(typeof(TEvent), handlers);
             }
 
             handlers.Add((@event, context) => handler((TEvent)@event, context));
         }
 
-        public void SetResult(Result result)
+        public void SetResult(TResult result)
         {
             Result ??= result;
         }

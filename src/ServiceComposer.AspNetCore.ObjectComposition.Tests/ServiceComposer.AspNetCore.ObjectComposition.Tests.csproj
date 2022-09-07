@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ServiceComposer.AspNetCore.FluentResultsProvider\ServiceComposer.AspNetCore.FluentResultsProvider.csproj" />
     <ProjectReference Include="..\ServiceComposer.AspNetCore\ServiceComposer.AspNetCore.csproj" />
     <ProjectReference Include="..\TestClassLibraryWithHandlers\TestClassLibraryWithHandlers.csproj" />
   </ItemGroup>

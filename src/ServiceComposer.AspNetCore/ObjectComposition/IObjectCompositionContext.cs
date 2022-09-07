@@ -1,12 +1,11 @@
-﻿using FluentResults;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
+﻿using ServiceComposer.AspNetCore.ObjectComposition.Internal;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition
+namespace ServiceComposer.AspNetCore.ObjectComposition
 {
-    public interface IObjectCompositionContext : ICompositionContext
+    public interface IObjectCompositionContext<TResult> : ICompositionContext
     {
         public ObjectRequest Request { get; }
-        public Result Result { get; }
-        void SetResult(Result result);
+        public TResult Result { get; }
+        void SetResult(TResult result);
     }
 }

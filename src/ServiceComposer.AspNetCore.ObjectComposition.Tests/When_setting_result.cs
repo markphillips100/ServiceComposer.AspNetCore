@@ -2,8 +2,8 @@
 using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceComposer.AspNetCore.EndpointRouteComposition;
-using ServiceComposer.AspNetCore.EndpointRouteComposition.Internal;
+using ServiceComposer.AspNetCore.ObjectComposition.Internal;
+using ServiceComposer.AspNetCore.ResultProviders.FluentResultsImplementation;
 using Xunit;
 
 namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
@@ -12,7 +12,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
     {
         const string expectedError = "I'm not sure I like the Id property value";
 
-        class TestGetIntegerHandler : ICompositionRequestsHandler<IObjectCompositionContext>
+        class TestGetIntegerHandler : ICompositionRequestsHandler<IObjectCompositionContext<Result<DynamicViewModel>>>
         {
             class Model
             {
@@ -20,7 +20,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
 
             [HttpGet("/sample/{id}")]
-            public Task Handle(IObjectCompositionContext compositionContext)
+            public Task Handle(IObjectCompositionContext<Result<DynamicViewModel>> compositionContext)
             {
                 var result = Result.Fail(new RequestValidationError(expectedError, "Id"));
 
@@ -30,10 +30,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
         }
 
-        class TestGetStringHandler : ICompositionRequestsHandler<IObjectCompositionContext>
+        class TestGetStringHandler : ICompositionRequestsHandler<IObjectCompositionContext<Result<DynamicViewModel>>>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(IObjectCompositionContext compositionContext)
+            public Task Handle(IObjectCompositionContext<Result<DynamicViewModel>> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
@@ -54,8 +54,9 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             });
             services.AddControllers(); // Needed for binding
             services.AddLogging();
+            services.AddViewModelCompositionForFluentResults();
             var serviceProvider = services.BuildServiceProvider();
-            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint>();
+            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint<Result<DynamicViewModel>>>();
 
             // Act
             var response = await endpoint.GetAsync("/sample/1");

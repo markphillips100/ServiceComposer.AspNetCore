@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using ServiceComposer.AspNetCore.ObjectComposition.Internal;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding
+namespace ServiceComposer.AspNetCore.ObjectComposition.ModelBinding
 {
     class ObjectRequestModelBinder
     {
@@ -28,7 +28,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding
             //always rewind the stream; otherwise,
             //if multiple handlers concurrently bind
             //different models only the first one succeeds
-//            request.Body.Position = 0;
+            //            request.Body.Position = 0;
 
             var modelType = typeof(T);
             var modelMetadata = modelMetadataProvider.GetMetadataForType(modelType);

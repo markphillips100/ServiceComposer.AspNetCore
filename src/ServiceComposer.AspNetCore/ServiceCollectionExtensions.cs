@@ -23,8 +23,9 @@ namespace ServiceComposer.AspNetCore
 
             services.AddSingleton(options);
             services.AddSingleton((sp) => new HttpCompositionMetadataRegistry(sp.GetRequiredService<CompositionMetadataRegistry>()));
-            services.AddSingleton((sp) => new ObjectCompositionMetadataRegistry(sp.GetRequiredService<CompositionMetadataRegistry>()));
-            services.AddTransient<IObjectCompositionEndpoint, ObjectCompositionEndpoint>();
+
+            services.AddSingleton(typeof(ObjectCompositionMetadataRegistry<>));
+            services.AddTransient(typeof(ObjectCompositionHandler<>));
         }
     }
 }

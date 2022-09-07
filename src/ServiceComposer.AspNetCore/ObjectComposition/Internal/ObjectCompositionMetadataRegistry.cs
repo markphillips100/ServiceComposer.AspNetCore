@@ -1,18 +1,15 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using ServiceComposer.AspNetCore.Configuration;
-using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
 {
-    internal class ObjectCompositionMetadataRegistry
+    internal class ObjectCompositionMetadataRegistry<TResult>
     {
         private readonly CompositionMetadataRegistry _compositionMetadataRegistry;
         private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _getMethodComponents;
@@ -106,17 +103,17 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
 
         private MethodInfo ExtractMethod(Type componentType)
         {
-            if (componentType.IsAssignableToGenericType(typeof(ICompositionRequestsHandler<IObjectCompositionContext>)))
+            if (componentType.IsAssignableToGenericType(typeof(ICompositionRequestsHandler<IObjectCompositionContext<TResult>>)))
             {
-                return componentType.GetMethod(nameof(ICompositionRequestsHandler<IObjectCompositionContext>.Handle));
+                return componentType.GetMethod(nameof(ICompositionRequestsHandler<IObjectCompositionContext<TResult>>.Handle));
             }
-            else if (componentType.IsAssignableToGenericType(typeof(ICompositionEventsSubscriber<IObjectCompositionContext>)))
+            else if (componentType.IsAssignableToGenericType(typeof(ICompositionEventsSubscriber<IObjectCompositionContext<TResult>>)))
             {
-                return componentType.GetMethod(nameof(ICompositionEventsSubscriber<IObjectCompositionContext>.Subscribe));
+                return componentType.GetMethod(nameof(ICompositionEventsSubscriber<IObjectCompositionContext<TResult>>.Subscribe));
             }
 
             var message = $"Component needs to be either {typeof(ICompositionRequestsHandler<>).Name}, or " +
-                          $"{typeof(ICompositionEventsSubscriber<>).Name} with a generic type argument of {typeof(IObjectCompositionContext).Name}.";
+                          $"{typeof(ICompositionEventsSubscriber<>).Name} with a generic type argument of {typeof(IObjectCompositionContext<TResult>).FullName}.";
             throw new NotSupportedException(message);
         }
 

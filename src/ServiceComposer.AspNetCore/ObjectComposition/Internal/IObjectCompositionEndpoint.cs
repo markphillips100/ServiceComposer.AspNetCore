@@ -1,10 +1,9 @@
-﻿using FluentResults;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
+namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
 {
-    public interface IObjectCompositionEndpoint
+    public interface IObjectCompositionEndpoint<TResult>
     {
-        Task<Result<DynamicViewModel>> GetAsync(string path);
+        Task<TResult> GetAsync(string path);
     }
 }

@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using ServiceComposer.AspNetCore.ObjectComposition.Internal;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding
+namespace ServiceComposer.AspNetCore.ObjectComposition.ModelBinding
 {
     public static class ObjectRequestModelBinderExtension
     {

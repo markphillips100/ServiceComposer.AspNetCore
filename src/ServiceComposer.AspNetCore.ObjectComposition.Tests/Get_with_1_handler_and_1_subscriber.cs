@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceComposer.AspNetCore.EndpointRouteComposition;
-using ServiceComposer.AspNetCore.EndpointRouteComposition.Internal;
+using ServiceComposer.AspNetCore.ObjectComposition.Internal;
 using Xunit;
 
 namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
@@ -13,10 +12,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
     {
         class TestEvent { }
 
-        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler<IObjectCompositionContext>
+        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler<IObjectCompositionContext<Result<DynamicViewModel>>>
         {
             [HttpGet("/sample/{id}")]
-            public async Task Handle(IObjectCompositionContext compositionContext)
+            public async Task Handle(IObjectCompositionContext<Result<DynamicViewModel>> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
@@ -25,10 +24,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
         }
 
-        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber<IObjectCompositionContext>
+        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber<IObjectCompositionContext<Result<DynamicViewModel>>>
         {
             [HttpGet("/sample/{id}")]
-            public void Subscribe(ICompositionEventsPublisher<IObjectCompositionContext> publisher)
+            public void Subscribe(ICompositionEventsPublisher<IObjectCompositionContext<Result<DynamicViewModel>>> publisher)
             {
                 publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
@@ -39,10 +38,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
         }
 
-        class TestGetSubscriberThatCallsRaisesEvent : ICompositionEventsSubscriber<IObjectCompositionContext>
+        class TestGetSubscriberThatCallsRaisesEvent : ICompositionEventsSubscriber<IObjectCompositionContext<Result<DynamicViewModel>>>
         {
             [HttpGet("/sample/{id}")]
-            public void Subscribe(ICompositionEventsPublisher<IObjectCompositionContext> publisher)
+            public void Subscribe(ICompositionEventsPublisher<IObjectCompositionContext<Result<DynamicViewModel>>> publisher)
             {
                 publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
@@ -66,8 +65,9 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 options.RegisterCompositionHandler<TestGetHandlerThatAppendAStringAndRaisesTestEvent>();
                 options.RegisterCompositionHandler<TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised>();
             });
+            services.AddViewModelCompositionForFluentResults();
             var serviceProvider = services.BuildServiceProvider();
-            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint>();
+            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint<Result<DynamicViewModel>>>();
 
             // Act
             var response = await endpoint.GetAsync("/sample/1");
@@ -90,8 +90,9 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 options.RegisterCompositionHandler<TestGetHandlerThatAppendAStringAndRaisesTestEvent>();
                 options.RegisterCompositionHandler<TestGetSubscriberThatCallsRaisesEvent>();
             });
+            services.AddViewModelCompositionForFluentResults();
             var serviceProvider = services.BuildServiceProvider();
-            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint>();
+            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint<Result<DynamicViewModel>>>();
 
             // Act
             Func<Task> sut = () => endpoint.GetAsync("/sample/1");

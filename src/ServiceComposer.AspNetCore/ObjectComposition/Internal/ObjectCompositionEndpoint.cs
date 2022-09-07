@@ -1,28 +1,24 @@
-﻿using FluentResults;
-using Microsoft.AspNetCore.Http;
-using System;
+﻿using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
+namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
 {
-    public class ObjectCompositionEndpoint : IObjectCompositionEndpoint
+    public abstract class ObjectCompositionEndpoint<TResult> : IObjectCompositionEndpoint<TResult>, IObjectResultProvider<TResult>
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly ObjectCompositionHandler<TResult> _objectCompositionHandler;
 
-        public ObjectCompositionEndpoint(IServiceProvider serviceProvider)
+        public ObjectCompositionEndpoint(ObjectCompositionHandler<TResult> objectCompositionHandler)
         {
-            _serviceProvider = serviceProvider;
+            _objectCompositionHandler = objectCompositionHandler;
         }
 
-        public async Task<Result<DynamicViewModel>> GetAsync(string path)
+        public virtual async Task<TResult> GetAsync(string path)
         {
-            var context = await ObjectCompositionHandler.HandleComposableRequest(_serviceProvider, HttpMethods.Get, path);
-            if (context.Result == null)
-            {
-                return Result.Ok(context.ViewModel);
-            }
-
-            return context.Result;
+            return await _objectCompositionHandler.HandleComposableRequest(this, HttpMethods.Get, path);
         }
+
+        public abstract TResult HandleError(string message);
+
+        public abstract TResult HandleSuccess(DynamicViewModel viewModel);
     }
 }
