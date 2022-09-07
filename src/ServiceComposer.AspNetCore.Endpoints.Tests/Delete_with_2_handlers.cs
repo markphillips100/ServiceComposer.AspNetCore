@@ -14,10 +14,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
     {
         static string expectedString = "this is a string value";
         static int expectedNumber = 32;
-        class TestIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestIntegerHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpDelete("/sample/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.ANumber = expectedNumber;
@@ -26,10 +26,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestStringHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpDelete("/sample/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.AString = expectedString;

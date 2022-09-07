@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
+using ServiceComposer.AspNetCore.ObjectRequestComposition;
 
-namespace ServiceComposer.AspNetCore.ObjectComposition.ModelBinding
+namespace ServiceComposer.AspNetCore.ObjectRequestComposition.ModelBinding
 {
     class ObjectRequestModelBinder
     {

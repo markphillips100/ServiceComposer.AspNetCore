@@ -1,9 +1,11 @@
 ﻿using System.Threading.Tasks;
 using FluentResults;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CSharp.RuntimeBinder;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
+using ServiceComposer.AspNetCore.FluentResultsObjectRequests;
+using ServiceComposer.AspNetCore.ObjectRequestComposition;
 using Xunit;
 
 namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
@@ -12,10 +14,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
     {
         class TestEvent { }
 
-        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler<IObjectCompositionContext<Result<DynamicViewModel>>>
+        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler<ICompositionContext<ObjectRequest, Result<DynamicViewModel>>>
         {
             [HttpGet("/sample/{id}")]
-            public async Task Handle(IObjectCompositionContext<Result<DynamicViewModel>> compositionContext)
+            public async Task Handle(ICompositionContext<ObjectRequest, Result<DynamicViewModel>> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
@@ -24,10 +26,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
         }
 
-        class TestGetSubscriberNotUsedTemplate : ICompositionEventsSubscriber<IObjectCompositionContext<Result<DynamicViewModel>>>
+        class TestGetSubscriberNotUsedTemplate : ICompositionEventsSubscriber<ICompositionContext<ObjectRequest, Result<DynamicViewModel>>>
         {
             [HttpGet("/this-is-never-used")]
-            public void Subscribe(ICompositionEventsPublisher<IObjectCompositionContext<Result<DynamicViewModel>>> publisher)
+            public void Subscribe(ICompositionEventsPublisher<ICompositionContext<ObjectRequest, Result<DynamicViewModel>>> publisher)
             {
                 publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
@@ -38,10 +40,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
         }
 
-        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber<IObjectCompositionContext<Result<DynamicViewModel>>>
+        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber<ICompositionContext<ObjectRequest, Result<DynamicViewModel>>>
         {
             [HttpGet("/sample/{id}")]
-            public void Subscribe(ICompositionEventsPublisher<IObjectCompositionContext<Result<DynamicViewModel>>> publisher)
+            public void Subscribe(ICompositionEventsPublisher<ICompositionContext<ObjectRequest, Result<DynamicViewModel>>> publisher)
             {
                 publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
@@ -66,10 +68,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             });
             services.AddViewModelCompositionForFluentResults();
             var serviceProvider = services.BuildServiceProvider();
-            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint<Result<DynamicViewModel>>>();
+            var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
 
             // Act
-            var response = await endpoint.GetAsync("/sample/1");
+            var response = await endpoint.HandleAsync(new ObjectRequest(HttpMethods.Get, "/sample/1"));
 
             // Assert
             Assert.True(response.IsSuccess);

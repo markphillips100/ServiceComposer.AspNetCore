@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
+using ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -86,15 +87,15 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             public string AValue { get; set; }
         }
 
-        class TestIntegerHandler_NO_ModelBinding : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestIntegerHandler_NO_ModelBinding : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPost("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
 
-                compositionContext.HttpRequest.Body.Position = 0;
-                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true);
+                compositionContext.Request.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.Request.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
@@ -104,7 +105,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestIntegerHandler_USE_ModelBinding : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestIntegerHandler_USE_ModelBinding : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             class ANumberModel
             {
@@ -112,23 +113,23 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpPost("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
-                var model = await compositionContext.HttpRequest.Bind<BodyRequest<ANumberModel>>();
+                var model = await compositionContext.Request.Bind<BodyRequest<ANumberModel>>();
                 vm.ANumber = model.Body.ANumber;
 
                 await compositionContext.RaiseEvent(new TestEvent() {AValue = $"ANumber: {vm.ANumber}."});
             }
         }
 
-        class TestStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestStringHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPost("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                compositionContext.HttpRequest.Body.Position = 0;
-                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true);
+                compositionContext.Request.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.Request.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
@@ -137,10 +138,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestStringSubcriber : ICompositionEventsSubscriber<IHttpCompositionContext>
+        class TestStringSubcriber : ICompositionEventsSubscriber<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPost("/sample/{id}")]
-            public void Subscribe(ICompositionEventsPublisher<IHttpCompositionContext> publisher)
+            public void Subscribe(ICompositionEventsPublisher<ICompositionContext<HttpRequest, IActionResult>> publisher)
             {
                 publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {

@@ -6,14 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using ServiceComposer.AspNetCore;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
-namespace Snippets.NetCore3x.SampleHandler
+namespace Snippets.SampleHandler
 {
     // begin-snippet: sample-handler-with-authorization
-    public class SampleHandlerWithAuthorization : ICompositionRequestsHandler<IHttpCompositionContext>
+    public class SampleHandlerWithAuthorization : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
     {
         [Authorize]
         [HttpGet("/sample/{id}")]
-        public Task Handle(IHttpCompositionContext compositionContext)
+        public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
         {
             return Task.CompletedTask;
         }

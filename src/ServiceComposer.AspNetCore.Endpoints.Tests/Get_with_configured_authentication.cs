@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -14,20 +15,20 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class Get_with_configured_authentication
     {
-        class RestrictedEmptyResponseHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class RestrictedEmptyResponseHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [Authorize]
             [HttpGet("/not-authorized-response/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 return Task.CompletedTask;
             }
         }
         
-        class NotRestrictedEmptyResponseHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class NotRestrictedEmptyResponseHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/not-authorized-response/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 return Task.CompletedTask;
             }

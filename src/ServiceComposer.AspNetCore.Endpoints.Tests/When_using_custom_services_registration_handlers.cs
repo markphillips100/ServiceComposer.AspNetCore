@@ -11,10 +11,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class When_using_custom_services_registration_handlers
     {
-        public class TestNoOpHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        public class TestNoOpHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 return Task.CompletedTask;
             }

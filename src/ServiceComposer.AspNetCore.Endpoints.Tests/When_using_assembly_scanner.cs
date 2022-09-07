@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceComposer.AspNetCore.Configuration;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 using ServiceComposer.AspNetCore.Testing;
 using TestClassLibraryWithHandlers;
 using Xunit;

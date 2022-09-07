@@ -3,18 +3,18 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
+namespace ServiceComposer.AspNetCore
 {
-    internal sealed class ObjectCompositionContext<TResult> : IObjectCompositionContext<TResult>, ICompositionEventsPublisher<IObjectCompositionContext<TResult>>
+    internal sealed class CompositionContext<TRequest, TResult> : ICompositionContext<TRequest, TResult>, ICompositionEventsPublisher<ICompositionContext<TRequest, TResult>>
     {
-        private readonly ConcurrentDictionary<Type, List<CompositionEventHandler<object, IObjectCompositionContext<TResult>>>> _compositionEventsSubscriptions = new();
+        private readonly ConcurrentDictionary<Type, List<CompositionEventHandler<object, ICompositionContext<TRequest, TResult>>>> _compositionEventsSubscriptions = new();
 
         public string RequestId { get; }
-        public ObjectRequest Request { get; }
+        public TRequest Request { get; }
         public TResult Result { get; private set; }
         public dynamic ViewModel { get; }
 
-        public ObjectCompositionContext(string requestId, ObjectRequest request, DynamicViewModel viewModel)
+        public CompositionContext(string requestId, TRequest request, DynamicViewModel viewModel)
         {
             RequestId = requestId;
             Request = request;
@@ -23,7 +23,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
 
         public Task RaiseEvent(object @event)
         {
-            var subscriberCompositionContextProxy = new SubscriberObjectCompositionContext<TResult>(this);
+            var subscriberCompositionContextProxy = new SubscriberCompositionContext<TRequest, TResult>(this);
 
             if (_compositionEventsSubscriptions.TryGetValue(@event.GetType(), out var compositionHandlers))
             {
@@ -35,11 +35,11 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
             return Task.CompletedTask;
         }
 
-        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, IObjectCompositionContext<TResult>> handler)
+        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, ICompositionContext<TRequest, TResult>> handler)
         {
             if (!_compositionEventsSubscriptions.TryGetValue(typeof(TEvent), out var handlers))
             {
-                handlers = new List<CompositionEventHandler<object, IObjectCompositionContext<TResult>>>();
+                handlers = new List<CompositionEventHandler<object, ICompositionContext<TRequest, TResult>>>();
                 _compositionEventsSubscriptions.TryAdd(typeof(TEvent), handlers);
             }
 

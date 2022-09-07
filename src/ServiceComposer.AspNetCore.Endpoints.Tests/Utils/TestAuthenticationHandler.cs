@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace ServiceComposer.AspNetCore.Endpoints.Tests
+namespace ServiceComposer.AspNetCore.Endpoints.Tests.Utils
 {
     class TestAuthenticationHandler : AuthenticationHandler<DelegateAuthenticationSchemeOptions>
     {

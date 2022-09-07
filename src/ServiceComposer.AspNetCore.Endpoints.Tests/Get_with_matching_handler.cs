@@ -11,10 +11,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class Get_with_matching_handler
     {
-        class EmptyResponseHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class EmptyResponseHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/empty-response/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 return Task.CompletedTask;
             }

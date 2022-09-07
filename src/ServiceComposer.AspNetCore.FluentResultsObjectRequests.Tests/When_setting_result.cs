@@ -1,9 +1,10 @@
 ﻿using System.Threading.Tasks;
 using FluentResults;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
-using ServiceComposer.AspNetCore.ResultProviders.FluentResultsImplementation;
+using ServiceComposer.AspNetCore.FluentResultsObjectRequests;
+using ServiceComposer.AspNetCore.ObjectRequestComposition;
 using Xunit;
 
 namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
@@ -12,7 +13,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
     {
         const string expectedError = "I'm not sure I like the Id property value";
 
-        class TestGetIntegerHandler : ICompositionRequestsHandler<IObjectCompositionContext<Result<DynamicViewModel>>>
+        class TestGetIntegerHandler : ICompositionRequestsHandler<ICompositionContext<ObjectRequest, Result<DynamicViewModel>>>
         {
             class Model
             {
@@ -20,7 +21,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
 
             [HttpGet("/sample/{id}")]
-            public Task Handle(IObjectCompositionContext<Result<DynamicViewModel>> compositionContext)
+            public Task Handle(ICompositionContext<ObjectRequest, Result<DynamicViewModel>> compositionContext)
             {
                 var result = Result.Fail(new RequestValidationError(expectedError, "Id"));
 
@@ -30,10 +31,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             }
         }
 
-        class TestGetStringHandler : ICompositionRequestsHandler<IObjectCompositionContext<Result<DynamicViewModel>>>
+        class TestGetStringHandler : ICompositionRequestsHandler<ICompositionContext<ObjectRequest, Result<DynamicViewModel>>>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(IObjectCompositionContext<Result<DynamicViewModel>> compositionContext)
+            public Task Handle(ICompositionContext<ObjectRequest, Result<DynamicViewModel>> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
@@ -56,10 +57,10 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             services.AddLogging();
             services.AddViewModelCompositionForFluentResults();
             var serviceProvider = services.BuildServiceProvider();
-            var endpoint = serviceProvider.GetRequiredService<IObjectCompositionEndpoint<Result<DynamicViewModel>>>();
+            var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
 
             // Act
-            var response = await endpoint.GetAsync("/sample/1");
+            var response = await endpoint.HandleAsync(new ObjectRequest(HttpMethods.Get, "/sample/1"));
 
             // Assert
             Assert.True(response.IsFailed);

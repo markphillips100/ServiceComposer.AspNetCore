@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace ServiceComposer.AspNetCore.Endpoints.Tests;
+namespace ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 
 public static class IsNestedTypeOfExtension
 {

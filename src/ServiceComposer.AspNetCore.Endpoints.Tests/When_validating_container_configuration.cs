@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Linq;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -13,10 +14,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class When_validating_container_configuration
     {
-        class EmptyResponseHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class EmptyResponseHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/empty-response/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.RequestId = compositionContext.RequestId;

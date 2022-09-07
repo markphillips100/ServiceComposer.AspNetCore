@@ -2,8 +2,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using ServiceComposer.AspNetCore.Configuration;
-using ServiceComposer.AspNetCore.EndpointRouteComposition.Internal;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
 namespace ServiceComposer.AspNetCore
 {
@@ -22,10 +23,10 @@ namespace ServiceComposer.AspNetCore
             options.InitializeServiceCollection();
 
             services.AddSingleton(options);
-            services.AddSingleton((sp) => new HttpCompositionMetadataRegistry(sp.GetRequiredService<CompositionMetadataRegistry>()));
+            services.AddSingleton(typeof(CompositionMetadataRegistry<,>));
+            services.AddTransient(typeof(CompositionHandler<,>));
 
-            services.AddSingleton(typeof(ObjectCompositionMetadataRegistry<>));
-            services.AddTransient(typeof(ObjectCompositionHandler<>));
+            services.AddTransient<ICompositionEndpoint<HttpRequest, IActionResult>, HttpRequestCompositionEndpoint>();
         }
     }
 }

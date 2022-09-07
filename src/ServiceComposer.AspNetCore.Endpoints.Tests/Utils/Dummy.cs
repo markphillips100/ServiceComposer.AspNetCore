@@ -1,4 +1,4 @@
-﻿namespace ServiceComposer.AspNetCore.Endpoints.Tests
+﻿namespace ServiceComposer.AspNetCore.Endpoints.Tests.Utils
 {
     public class Dummy
     {

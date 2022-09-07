@@ -5,18 +5,18 @@ using Microsoft.AspNetCore.Routing;
 using ServiceComposer.AspNetCore;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
-namespace Snippets.NetCore3x.BasicUsage
+namespace Snippets.BasicUsage
 {
     // begin-snippet: basic-usage-sales-handler
-    public class SalesProductInfo : ICompositionRequestsHandler<IHttpCompositionContext>
+    public class SalesProductInfo : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
     {
         [HttpGet("/product/{id}")]
-        public Task Handle(IHttpCompositionContext compositionContext)
+        public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
         {
             var vm = compositionContext.ViewModel;
 
             //retrieve product details from the sales database or service
-            vm.ProductId = compositionContext.HttpRequest.HttpContext.GetRouteValue("id").ToString();
+            vm.ProductId = compositionContext.Request.HttpContext.GetRouteValue("id").ToString();
             vm.ProductPrice = 100;
 
             return Task.CompletedTask;

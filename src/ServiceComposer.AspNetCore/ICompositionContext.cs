@@ -9,4 +9,10 @@ namespace ServiceComposer.AspNetCore
         dynamic ViewModel { get; }
     }
 
+    public interface ICompositionContext<TRequest, TResult> : ICompositionContext
+    {
+        public TRequest Request { get; }
+        public TResult Result { get; }
+        void SetResult(TResult result);
+    }
 }

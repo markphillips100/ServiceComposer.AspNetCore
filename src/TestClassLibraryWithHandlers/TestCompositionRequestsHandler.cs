@@ -7,10 +7,10 @@ using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
 namespace TestClassLibraryWithHandlers
 {
-    public class TestCompositionRequestsHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+    public class TestCompositionRequestsHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
     {
         [HttpGet("/empty-response/{id}")]
-        public Task Handle(IHttpCompositionContext compositionContext)
+        public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
         {
             return Task.CompletedTask;
         }

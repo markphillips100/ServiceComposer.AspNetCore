@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using ServiceComposer.AspNetCore;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
+using ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
     {
         const string expectedError = "I'm not sure I like the Id property value";
 
-        class TestGetIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestGetIntegerHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             class Model
             {
@@ -27,9 +28,9 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpGet("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                var model = await compositionContext.HttpRequest.Bind<Model>();
+                var model = await compositionContext.Request.Bind<Model>();
 
                 var problems = new ValidationProblemDetails(new Dictionary<string, string[]>() 
                 {
@@ -37,14 +38,14 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
                 });
                 var result = new BadRequestObjectResult(problems);
 
-                compositionContext.SetActionResult(result);
+                compositionContext.SetResult(result);
             }
         }
 
-        class TestGetStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestGetStringHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/sample/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.AString = "sample";

@@ -12,10 +12,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public static class When_handling_request
     {
-        class EmptyResponseHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class EmptyResponseHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/empty-response/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.RequestId = compositionContext.RequestId;

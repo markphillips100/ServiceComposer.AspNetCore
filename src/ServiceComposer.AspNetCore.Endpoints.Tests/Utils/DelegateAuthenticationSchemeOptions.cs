@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 
-namespace ServiceComposer.AspNetCore.Endpoints.Tests
+namespace ServiceComposer.AspNetCore.Endpoints.Tests.Utils
 {
     class DelegateAuthenticationSchemeOptions : AuthenticationSchemeOptions
     {

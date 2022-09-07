@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
-using ServiceComposer.AspNetCore.ObjectComposition.ModelBinding;
+using ServiceComposer.AspNetCore.ObjectRequestComposition.ModelBinding;
 
 namespace ServiceComposer.AspNetCore.Configuration
 {

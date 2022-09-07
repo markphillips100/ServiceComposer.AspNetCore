@@ -1,6 +1,6 @@
 ﻿using FluentResults;
 
-namespace ServiceComposer.AspNetCore.ResultProviders.FluentResultsImplementation
+namespace ServiceComposer.AspNetCore.FluentResultsObjectRequests
 {
     public class RequestValidationError : Error
     {

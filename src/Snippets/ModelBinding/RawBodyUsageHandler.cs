@@ -8,16 +8,16 @@ using Newtonsoft.Json.Linq;
 using ServiceComposer.AspNetCore;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
-namespace Snippets.NetCore3x.ModelBinding
+namespace Snippets.ModelBinding
 {
-    class RawBodyUsageHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+    class RawBodyUsageHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
     {
         // begin-snippet: model-binding-raw-body-usage
         [HttpPost("/sample/{id}")]
-        public async Task Handle(IHttpCompositionContext compositionContext)
+        public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
         {
-            compositionContext.HttpRequest.Body.Position = 0;
-            using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true );
+            compositionContext.Request.Body.Position = 0;
+            using var reader = new StreamReader(compositionContext.Request.Body, Encoding.UTF8, leaveOpen: true);
             var body = await reader.ReadToEndAsync();
             var content = JObject.Parse(body);
 
@@ -26,13 +26,13 @@ namespace Snippets.NetCore3x.ModelBinding
         // end-snippet
     }
 
-    class RawRouteDataUsageHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+    class RawRouteDataUsageHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
     {
         // begin-snippet: model-binding-raw-route-data-usage
         [HttpPost("/sample/{id}")]
-        public Task Handle(IHttpCompositionContext compositionContext)
+        public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
         {
-            var routeData = compositionContext.HttpRequest.HttpContext.GetRouteData();
+            var routeData = compositionContext.Request.HttpContext.GetRouteData();
             var id = int.Parse(routeData.Values["id"].ToString());
 
             //use the id value as needed

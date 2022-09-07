@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using ServiceComposer.AspNetCore;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
-namespace Snippets.NetCore3x.BasicUsage
+namespace Snippets.BasicUsage
 {
     // begin-snippet: sample-startup
     public class Startup

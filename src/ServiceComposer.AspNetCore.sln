@@ -12,9 +12,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceComposer.AspNetCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snippets", "Snippets\Snippets.csproj", "{5AC48B68-BFB3-451F-8165-367A3D6FA4FD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceComposer.AspNetCore.ObjectComposition.Tests", "ServiceComposer.AspNetCore.ObjectComposition.Tests\ServiceComposer.AspNetCore.ObjectComposition.Tests.csproj", "{1E3AC2AB-6BFC-4A69-A10C-A6E59105AEF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceComposer.AspNetCore.FluentResultsObjectRequests.Tests", "ServiceComposer.AspNetCore.FluentResultsObjectRequests.Tests\ServiceComposer.AspNetCore.FluentResultsObjectRequests.Tests.csproj", "{1E3AC2AB-6BFC-4A69-A10C-A6E59105AEF7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceComposer.AspNetCore.FluentResultsProvider", "ServiceComposer.AspNetCore.FluentResultsProvider\ServiceComposer.AspNetCore.FluentResultsProvider.csproj", "{1F43B154-1A39-4689-B470-1E7AC96CC58E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceComposer.AspNetCore.FluentResultsObjectRequests", "ServiceComposer.AspNetCore.FluentResultsObjectRequests\ServiceComposer.AspNetCore.FluentResultsObjectRequests.csproj", "{1F43B154-1A39-4689-B470-1E7AC96CC58E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

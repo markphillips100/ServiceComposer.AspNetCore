@@ -1,8 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using ServiceComposer.AspNetCore.ObjectComposition.Internal;
 
-namespace ServiceComposer.AspNetCore.ObjectComposition.ModelBinding
+namespace ServiceComposer.AspNetCore.ObjectRequestComposition.ModelBinding
 {
     public static class ObjectRequestModelBinderExtension
     {

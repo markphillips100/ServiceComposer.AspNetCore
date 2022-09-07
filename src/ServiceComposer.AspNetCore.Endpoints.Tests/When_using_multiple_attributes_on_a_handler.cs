@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServiceComposer.AspNetCore;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
+using ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -19,14 +20,14 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class When_using_multiple_attributes_on_a_handler
     {
-        public class MultipleAttributesOfDifferentTypesHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        public class MultipleAttributesOfDifferentTypesHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPost("/multiple/attributes")]
             [HttpGet("/multiple/attributes/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
-                vm.RequestPath = compositionContext.HttpRequest.Path;
+                vm.RequestPath = compositionContext.Request.Path;
 
                 return Task.CompletedTask;
             }
@@ -72,14 +73,14 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             //Assert.True(composedResponse.IsSuccessStatusCode);
         }
         
-        public class MultipleGetAttributesDifferentTemplatesHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        public class MultipleGetAttributesDifferentTemplatesHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/multiple/attributes")]
             [HttpGet("/multiple/attributes/{id}")]
-            public Task Handle(IHttpCompositionContext compositionContext)
+            public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
-                vm.RequestPath = compositionContext.HttpRequest.Path;
+                vm.RequestPath = compositionContext.Request.Path;
 
                 return Task.CompletedTask;
             }

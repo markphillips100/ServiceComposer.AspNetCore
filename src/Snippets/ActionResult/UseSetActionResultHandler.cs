@@ -6,15 +6,15 @@ using Microsoft.Extensions.DependencyInjection;
 using ServiceComposer.AspNetCore;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 
-namespace Snippets.NetCore3x.ActionResult
+namespace Snippets.ActionResult
 {
     // begin-snippet: action-results
-    public class UseSetActionResultHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+    public class UseSetActionResultHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
     {
         [HttpGet("/product/{id}")]
-        public Task Handle(IHttpCompositionContext compositionContext)
+        public Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
         {
-            var id = compositionContext.HttpRequest.RouteValues["id"];
+            var id = compositionContext.Request.RouteValues["id"];
 
             //validate the id format
 
@@ -24,7 +24,7 @@ namespace Snippets.NetCore3x.ActionResult
             });
             var result = new BadRequestObjectResult(problems);
 
-            compositionContext.SetActionResult(result);
+            compositionContext.SetResult(result);
 
             return Task.CompletedTask;
         }

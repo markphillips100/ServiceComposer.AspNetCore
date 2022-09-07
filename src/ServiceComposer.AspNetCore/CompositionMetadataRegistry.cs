@@ -1,16 +1,14 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using ServiceComposer.AspNetCore.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
-namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
+namespace ServiceComposer.AspNetCore
 {
-    internal class HttpCompositionMetadataRegistry
+    public class CompositionMetadataRegistry<TRequest, TResult>
     {
         private readonly CompositionMetadataRegistry _compositionMetadataRegistry;
         private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _getMethodComponents;
@@ -20,7 +18,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
         private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _deleteMethodComponents;
 
 
-        public HttpCompositionMetadataRegistry(CompositionMetadataRegistry compositionMetadataRegistry)
+        public CompositionMetadataRegistry(CompositionMetadataRegistry compositionMetadataRegistry)
         {
             _compositionMetadataRegistry = compositionMetadataRegistry;
             _getMethodComponents = new Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>>(() =>
@@ -45,7 +43,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
             });
         }
 
-        public IList<(Type ComponentType, MethodInfo Method, string Template)> HttpMethodComponentsForTemplateKey(string registryKey, string httpMethod) =>
+        internal IList<(Type ComponentType, MethodInfo Method, string Template)> HttpMethodComponentsForTemplateKey(string registryKey, string httpMethod) =>
             httpMethod switch
             {
                 "GET" => GetComponents.Single(x => x.Key == registryKey).ToList(),
@@ -56,15 +54,15 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
                 _ => throw new InvalidOperationException("Unknown httpMethod")
             };
 
-        public IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> GetComponents =>
+        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> GetComponents =>
             _getMethodComponents.Value;
-        public IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PostComponents =>
+        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PostComponents =>
             _postMethodComponents.Value;
-        public IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PutComponents =>
+        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PutComponents =>
             _putMethodComponents.Value;
-        public IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PatchComponents =>
+        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PatchComponents =>
             _patchMethodComponents.Value;
-        public IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> DeleteComponents =>
+        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> DeleteComponents =>
             _deleteMethodComponents.Value;
 
 
@@ -89,17 +87,17 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
 
         private MethodInfo ExtractMethod(Type componentType)
         {
-            if (componentType.IsAssignableToGenericType(typeof(ICompositionRequestsHandler<IHttpCompositionContext>)))
+            if (componentType.IsAssignableToGenericType(typeof(ICompositionRequestsHandler<ICompositionContext<TRequest, TResult>>)))
             {
-                return componentType.GetMethod(nameof(ICompositionRequestsHandler<IHttpCompositionContext>.Handle));
+                return componentType.GetMethod(nameof(ICompositionRequestsHandler<ICompositionContext<TRequest, TResult>>.Handle));
             }
-            else if (componentType.IsAssignableToGenericType(typeof(ICompositionEventsSubscriber<IHttpCompositionContext>)))
+            else if (componentType.IsAssignableToGenericType(typeof(ICompositionEventsSubscriber<ICompositionContext<TRequest, TResult>>)))
             {
-                return componentType.GetMethod(nameof(ICompositionEventsSubscriber<IHttpCompositionContext>.Subscribe));
+                return componentType.GetMethod(nameof(ICompositionEventsSubscriber<ICompositionContext<TRequest, TResult>>.Subscribe));
             }
 
             var message = $"Component needs to be either {typeof(ICompositionRequestsHandler<>).Name}, or " +
-                          $"{typeof(ICompositionEventsSubscriber<>).Name} with a generic type argument of {typeof(IHttpCompositionContext).Name}.";
+                          $"{typeof(ICompositionEventsSubscriber<>).Name} with a generic type argument of {typeof(ICompositionContext<TRequest, TResult>).FullName}.";
             throw new NotSupportedException(message);
         }
 

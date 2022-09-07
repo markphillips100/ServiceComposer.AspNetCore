@@ -14,10 +14,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
     {
         class TestEvent{}
 
-        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestGetHandlerThatAppendAStringAndRaisesTestEvent : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
                 var vm = compositionContext.ViewModel;
                 vm.AString = "sample";
@@ -26,10 +26,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestGetSubscriberNotUsedTemplate : ICompositionEventsSubscriber<IHttpCompositionContext>
+        class TestGetSubscriberNotUsedTemplate : ICompositionEventsSubscriber<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/this-is-never-used")]
-            public void Subscribe(ICompositionEventsPublisher<IHttpCompositionContext> publisher)
+            public void Subscribe(ICompositionEventsPublisher<ICompositionContext<HttpRequest, IActionResult>> publisher)
             {
                 publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {
@@ -40,10 +40,10 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber<IHttpCompositionContext>
+        class TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised : ICompositionEventsSubscriber<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpGet("/sample/{id}")]
-            public void Subscribe(ICompositionEventsPublisher<IHttpCompositionContext> publisher)
+            public void Subscribe(ICompositionEventsPublisher<ICompositionContext<HttpRequest, IActionResult>> publisher)
             {
                 publisher.Subscribe<TestEvent>((@event, compositionContext) =>
                 {

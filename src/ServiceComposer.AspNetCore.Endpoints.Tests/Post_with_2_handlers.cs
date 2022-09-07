@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServiceComposer.AspNetCore.EndpointRouteComposition;
 using ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding;
+using ServiceComposer.AspNetCore.Endpoints.Tests.Utils;
 using ServiceComposer.AspNetCore.Testing;
 using Xunit;
 
@@ -51,7 +52,7 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             };
         }
 
-        class TestIntegerHandler_USE_ModelBinding : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestIntegerHandler_USE_ModelBinding : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             class IntegerModel
             {
@@ -59,16 +60,16 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpPost("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                var model = await compositionContext.HttpRequest.Bind<BodyRequest<IntegerModel>>();
+                var model = await compositionContext.Request.Bind<BodyRequest<IntegerModel>>();
 
                 var vm = compositionContext.ViewModel;
                 vm.ANumber = model.Body.ANumber;
             }
         }
 
-        class TestStringHandler_USE_ModelBinding : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestStringHandler_USE_ModelBinding : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             class StringModel
             {
@@ -76,22 +77,22 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
 
             [HttpPost("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                var model = await compositionContext.HttpRequest.Bind<BodyRequest<StringModel>>();
+                var model = await compositionContext.Request.Bind<BodyRequest<StringModel>>();
 
                 var vm = compositionContext.ViewModel;
                 vm.AString = model.Body.AString;
             }
         }
 
-        class TestIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestIntegerHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPost("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                compositionContext.HttpRequest.Body.Position = 0;
-                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true);
+                compositionContext.Request.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.Request.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
@@ -100,13 +101,13 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestStringHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPost("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                compositionContext.HttpRequest.Body.Position = 0;
-                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true );
+                compositionContext.Request.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.Request.Body, Encoding.UTF8, leaveOpen: true );
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 

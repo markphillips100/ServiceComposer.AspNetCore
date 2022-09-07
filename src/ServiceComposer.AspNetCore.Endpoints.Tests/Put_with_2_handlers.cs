@@ -18,13 +18,13 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
 {
     public class Put_with_2_handlers
     {
-        class TestIntegerHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestIntegerHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPut("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                compositionContext.HttpRequest.Body.Position = 0;
-                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true);
+                compositionContext.Request.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.Request.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 
@@ -33,13 +33,13 @@ namespace ServiceComposer.AspNetCore.Endpoints.Tests
             }
         }
 
-        class TestStringHandler : ICompositionRequestsHandler<IHttpCompositionContext>
+        class TestStringHandler : ICompositionRequestsHandler<ICompositionContext<HttpRequest, IActionResult>>
         {
             [HttpPut("/sample/{id}")]
-            public async Task Handle(IHttpCompositionContext compositionContext)
+            public async Task Handle(ICompositionContext<HttpRequest, IActionResult> compositionContext)
             {
-                compositionContext.HttpRequest.Body.Position = 0;
-                using var reader = new StreamReader(compositionContext.HttpRequest.Body, Encoding.UTF8, leaveOpen: true );
+                compositionContext.Request.Body.Position = 0;
+                using var reader = new StreamReader(compositionContext.Request.Body, Encoding.UTF8, leaveOpen: true );
                 var body = await reader.ReadToEndAsync();
                 var content = JObject.Parse(body);
 

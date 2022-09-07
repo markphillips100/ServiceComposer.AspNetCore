@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using ServiceComposer.AspNetCore.EndpointRouteComposition.Internal;
@@ -20,7 +21,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
             }
 
             var httpCompositionMetadataRegistry =
-                endpoints.ServiceProvider.GetRequiredService<HttpCompositionMetadataRegistry>();
+                endpoints.ServiceProvider.GetRequiredService<CompositionMetadataRegistry<HttpRequest, IActionResult>>();
 
             MapGetComponents(
                 httpCompositionMetadataRegistry,
@@ -41,63 +42,58 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
             return endpoints.DataSources.OfType<HttpCompositionEndpointDataSource>().FirstOrDefault();
         }
 
-        private static void MapGetComponents(HttpCompositionMetadataRegistry httpCompositionMetadataRegistry, ICollection<EndpointDataSource> dataSources)
+        private static void MapGetComponents(CompositionMetadataRegistry<HttpRequest, IActionResult> registry, ICollection<EndpointDataSource> dataSources)
         {
-            foreach (var componentsGroup in httpCompositionMetadataRegistry.GetComponents)
+            foreach (var componentsGroup in registry.GetComponents)
             {
                 var builder = CreateCompositionEndpointBuilder(
                     componentsGroup,
-                    httpCompositionMetadataRegistry,
                     HttpMethods.Get);
                 AppendToDataSource(dataSources, builder);
             }
         }
 
-        private static void MapPostComponents(HttpCompositionMetadataRegistry httpCompositionMetadataRegistry, ICollection<EndpointDataSource> dataSources)
+        private static void MapPostComponents(CompositionMetadataRegistry<HttpRequest, IActionResult> registry, ICollection<EndpointDataSource> dataSources)
         {
-            foreach (var componentsGroup in httpCompositionMetadataRegistry.PostComponents)
+            foreach (var componentsGroup in registry.PostComponents)
             {
                 var builder = CreateCompositionEndpointBuilder(
                     componentsGroup,
-                    httpCompositionMetadataRegistry,
                     HttpMethods.Post);
                 AppendToDataSource(dataSources, builder);
             }
         }
 
-        private static void MapPatchComponents(HttpCompositionMetadataRegistry httpCompositionMetadataRegistry, ICollection<EndpointDataSource> dataSources)
+        private static void MapPatchComponents(CompositionMetadataRegistry<HttpRequest, IActionResult> registry, ICollection<EndpointDataSource> dataSources)
         {
-            foreach (var componentsGroup in httpCompositionMetadataRegistry.PatchComponents)
+            foreach (var componentsGroup in registry.PatchComponents)
             {
                 var builder = CreateCompositionEndpointBuilder(
                     componentsGroup,
-                    httpCompositionMetadataRegistry,
                     HttpMethods.Patch);
 
                 AppendToDataSource(dataSources, builder);
             }
         }
 
-        private static void MapPutComponents(HttpCompositionMetadataRegistry httpCompositionMetadataRegistry, ICollection<EndpointDataSource> dataSources)
+        private static void MapPutComponents(CompositionMetadataRegistry<HttpRequest, IActionResult> registry, ICollection<EndpointDataSource> dataSources)
         {
-            foreach (var componentsGroup in httpCompositionMetadataRegistry.PutComponents)
+            foreach (var componentsGroup in registry.PutComponents)
             {
                 var builder = CreateCompositionEndpointBuilder(
                     componentsGroup,
-                    httpCompositionMetadataRegistry,
                     HttpMethods.Put);
 
                 AppendToDataSource(dataSources, builder);
             }
         }
 
-        private static void MapDeleteComponents(HttpCompositionMetadataRegistry httpCompositionMetadataRegistry, ICollection<EndpointDataSource> dataSources)
+        private static void MapDeleteComponents(CompositionMetadataRegistry<HttpRequest, IActionResult> registry, ICollection<EndpointDataSource> dataSources)
         {
-            foreach (var componentsGroup in httpCompositionMetadataRegistry.DeleteComponents)
+            foreach (var componentsGroup in registry.DeleteComponents)
             {
                 var builder = CreateCompositionEndpointBuilder(
                     componentsGroup,
-                    httpCompositionMetadataRegistry,
                     HttpMethods.Delete);
 
                 AppendToDataSource(dataSources, builder);
@@ -145,12 +141,10 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
 
         private static HttpCompositionEndpointBuilder CreateCompositionEndpointBuilder(
             IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)> componentsGroup,
-            HttpCompositionMetadataRegistry metadataRegistry,
             string httpMethod)
         {
             var builder = new HttpCompositionEndpointBuilder(
                 componentsGroup.Key,
-                metadataRegistry,
                 0)
             {
                 DisplayName = componentsGroup.Key,

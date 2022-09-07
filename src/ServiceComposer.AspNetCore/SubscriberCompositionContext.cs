@@ -1,20 +1,20 @@
 ﻿using System.Threading.Tasks;
 
-namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
+namespace ServiceComposer.AspNetCore
 {
     /// <summary>
     /// This type is passed to subscribers only and wraps the regular context to prevent subscribers from raising events or subscribing again.
     /// </summary>
-    internal sealed class SubscriberObjectCompositionContext<TResult> : IObjectCompositionContext<TResult>, ICompositionEventsPublisher<IObjectCompositionContext<TResult>>
+    internal sealed class SubscriberCompositionContext<TRequest, TResult> : ICompositionContext<TRequest, TResult>, ICompositionEventsPublisher<ICompositionContext<TRequest, TResult>>
     {
-        private ObjectCompositionContext<TResult> _internal;
+        private readonly CompositionContext<TRequest, TResult> _internal;
 
-        public SubscriberObjectCompositionContext(ObjectCompositionContext<TResult> @internal)
+        public SubscriberCompositionContext(CompositionContext<TRequest, TResult> @internal)
         {
             _internal = @internal;
         }
 
-        public ObjectRequest Request => _internal.Request;
+        public TRequest Request => _internal.Request;
 
         public TResult Result => _internal.Result;
 
@@ -32,7 +32,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Internal
             throw new System.InvalidOperationException("Subscribers cannot raise events.");
         }
 
-        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, IObjectCompositionContext<TResult>> handler)
+        public void Subscribe<TEvent>(CompositionEventHandler<TEvent, ICompositionContext<TRequest, TResult>> handler)
         {
             throw new System.InvalidOperationException("Subscribers cannot subscribe to more events.");
         }

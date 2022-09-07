@@ -1,30 +1,44 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
 
 namespace ServiceComposer.AspNetCore.EndpointRouteComposition.Internal
 {
     internal class HttpCompositionEndpointBuilder : EndpointBuilder
     {
-        readonly RoutePattern routePattern;
+        private readonly RoutePattern routePattern;
+        static readonly ActionDescriptor EmptyActionDescriptor = new();
 
         public int Order { get; }
 
-        internal HttpCompositionEndpointBuilder(string registryKey, HttpCompositionMetadataRegistry registry, int order)
+        internal HttpCompositionEndpointBuilder(string registryKey, int order)
         {
             routePattern = RoutePatternFactory.Parse(registryKey);
             Order = order;
             RequestDelegate = async context =>
             {
-                var compositionContext = await HttpCompositionHandler.HandleComposableRequest(registryKey, registry, context);
-                if (compositionContext.ActionResult != null)
-                {
-                    await context.ExecuteResultAsync(compositionContext.ActionResult);
-                    return;
-                }
-                await context.WriteModelAsync((object)compositionContext.ViewModel);
+                var endpoint = context.RequestServices.GetRequiredService<ICompositionEndpoint<HttpRequest, IActionResult>>();
+                var result = await endpoint.HandleAsync(context.Request);
+
+                await ExecuteResultAsync(context, result);
             };
+        }
+
+        public static Task ExecuteResultAsync(HttpContext context, IActionResult result)
+        {
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (result == null) throw new ArgumentNullException(nameof(result));
+
+            var routeData = context.GetRouteData();
+            var actionContext = new ActionContext(context, routeData, EmptyActionDescriptor);
+
+            return result.ExecuteResultAsync(actionContext);
         }
 
         //static void Validate(RoutePattern routePattern, Type[] componentsTypes)
