@@ -33,7 +33,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
             return await _compositionHandler.HandleComposableRequest(httpRequest, componentsTypes, this);
         }
 
-        private (string, IList<(Type ComponentType, MethodInfo Method, string Template)>) HttpMethodComponentsForRequest(HttpRequest request)
+        private (string, IList<TemplateComponentMethodItem>) HttpMethodComponentsForRequest(HttpRequest request)
         {
             return request.Method switch
             {
@@ -46,7 +46,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
             };
         }
 
-        private (string, IList<(Type ComponentType, MethodInfo Method, string Template)>) GetObjectRequestAndHandlers(HttpRequest request, IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> components)
+        private (string, IList<TemplateComponentMethodItem>) GetObjectRequestAndHandlers(HttpRequest request, IList<IGrouping<string, TemplateComponentMethodItem>> components)
         {
             foreach (var group in components)
             {

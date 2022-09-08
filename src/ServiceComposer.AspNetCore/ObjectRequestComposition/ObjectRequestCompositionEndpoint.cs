@@ -34,7 +34,7 @@ namespace ServiceComposer.AspNetCore.ObjectRequestComposition
         }
 
 
-        private (ObjectRequest, IList<(Type ComponentType, MethodInfo Method, string Template)>) HttpMethodComponentsForRequest(ObjectRequest request)
+        private (ObjectRequest, IList<TemplateComponentMethodItem>) HttpMethodComponentsForRequest(ObjectRequest request)
         {
             return request.Method switch
             {
@@ -47,7 +47,7 @@ namespace ServiceComposer.AspNetCore.ObjectRequestComposition
             };
         }
 
-        private (ObjectRequest, IList<(Type ComponentType, MethodInfo Method, string Template)>) GetObjectRequestAndHandlers(ObjectRequest request, IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> components)
+        private (ObjectRequest, IList<TemplateComponentMethodItem>) GetObjectRequestAndHandlers(ObjectRequest request, IList<IGrouping<string, TemplateComponentMethodItem>> components)
         {
             foreach (var group in components)
             {

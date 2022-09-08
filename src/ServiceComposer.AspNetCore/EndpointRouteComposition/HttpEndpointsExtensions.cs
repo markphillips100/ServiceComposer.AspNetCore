@@ -140,7 +140,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
         }
 
         private static HttpCompositionEndpointBuilder CreateCompositionEndpointBuilder(
-            IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)> componentsGroup,
+            IGrouping<string, TemplateComponentMethodItem> componentsGroup,
             string httpMethod)
         {
             var builder = new HttpCompositionEndpointBuilder(

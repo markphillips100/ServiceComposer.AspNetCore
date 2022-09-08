@@ -8,42 +8,46 @@ using System.Reflection;
 
 namespace ServiceComposer.AspNetCore
 {
+    internal record ComponentMethodItem(Type ComponentType, MethodInfo Method);
+    internal record TemplateComponentMethodItem(ComponentMethodItem ComponentMethodItem, string Template) : ComponentMethodItem(ComponentMethodItem.ComponentType, ComponentMethodItem.Method);
+
+
     public class CompositionMetadataRegistry<TRequest, TResult>
     {
         private readonly CompositionMetadataRegistry _compositionMetadataRegistry;
-        private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _getMethodComponents;
-        private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _postMethodComponents;
-        private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _putMethodComponents;
-        private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _patchMethodComponents;
-        private readonly Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>> _deleteMethodComponents;
+        private readonly Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>> _getMethodComponents;
+        private readonly Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>> _postMethodComponents;
+        private readonly Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>> _putMethodComponents;
+        private readonly Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>> _patchMethodComponents;
+        private readonly Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>> _deleteMethodComponents;
 
 
         public CompositionMetadataRegistry(CompositionMetadataRegistry compositionMetadataRegistry)
         {
             _compositionMetadataRegistry = compositionMetadataRegistry;
-            _getMethodComponents = new Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>>(() =>
+            _getMethodComponents = new Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>>(() =>
             {
                 return SelectComponentsGroupedByTemplate<HttpGetAttribute>(compositionMetadataRegistry).ToList();
             });
-            _postMethodComponents = new Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>>(() =>
+            _postMethodComponents = new Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>>(() =>
             {
                 return SelectComponentsGroupedByTemplate<HttpPostAttribute>(compositionMetadataRegistry).ToList();
             });
-            _putMethodComponents = new Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>>(() =>
+            _putMethodComponents = new Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>>(() =>
             {
                 return SelectComponentsGroupedByTemplate<HttpPutAttribute>(compositionMetadataRegistry).ToList();
             });
-            _patchMethodComponents = new Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>>(() =>
+            _patchMethodComponents = new Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>>(() =>
             {
                 return SelectComponentsGroupedByTemplate<HttpPatchAttribute>(compositionMetadataRegistry).ToList();
             });
-            _deleteMethodComponents = new Lazy<IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>>(() =>
+            _deleteMethodComponents = new Lazy<IList<IGrouping<string, TemplateComponentMethodItem>>>(() =>
             {
                 return SelectComponentsGroupedByTemplate<HttpDeleteAttribute>(compositionMetadataRegistry).ToList();
             });
         }
 
-        internal IList<(Type ComponentType, MethodInfo Method, string Template)> HttpMethodComponentsForTemplateKey(string registryKey, string httpMethod) =>
+        internal IList<TemplateComponentMethodItem> HttpMethodComponentsForTemplateKey(string registryKey, string httpMethod) =>
             httpMethod switch
             {
                 "GET" => GetComponents.Single(x => x.Key == registryKey).ToList(),
@@ -54,35 +58,47 @@ namespace ServiceComposer.AspNetCore
                 _ => throw new InvalidOperationException("Unknown httpMethod")
             };
 
-        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> GetComponents =>
+        internal IList<IGrouping<string, TemplateComponentMethodItem>> GetComponents =>
             _getMethodComponents.Value;
-        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PostComponents =>
+        internal IList<IGrouping<string, TemplateComponentMethodItem>> PostComponents =>
             _postMethodComponents.Value;
-        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PutComponents =>
+        internal IList<IGrouping<string, TemplateComponentMethodItem>> PutComponents =>
             _putMethodComponents.Value;
-        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> PatchComponents =>
+        internal IList<IGrouping<string, TemplateComponentMethodItem>> PatchComponents =>
             _patchMethodComponents.Value;
-        internal IList<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>> DeleteComponents =>
+        internal IList<IGrouping<string, TemplateComponentMethodItem>> DeleteComponents =>
             _deleteMethodComponents.Value;
 
 
-        private IEnumerable<IGrouping<string, (Type ComponentType, MethodInfo Method, string Template)>>
+        private IEnumerable<IGrouping<string, TemplateComponentMethodItem>>
             SelectComponentsGroupedByTemplate<TAttribute>(CompositionMetadataRegistry compositionMetadataRegistry)
             where TAttribute : HttpMethodAttribute
         {
-            return compositionMetadataRegistry.Components
-                .SelectMany<Type, (Type ComponentType, MethodInfo Method, string Template)>(componentType =>
+            return GetContextCompatibleHandlers(compositionMetadataRegistry)
+                .SelectMany(item =>
                 {
-                    var method = ExtractMethod(componentType);
-                    return method.GetCustomAttributes<TAttribute>()?
-                        .Select(a =>
-                        {
-                            var template = a.Template.TrimStart('/');
-                            return (componentType, method, template.ToLowerInvariant());
-                        }).ToArray();
+                    return GetHandlersWithRoutes<TAttribute>(item);
                 })
                 .Where(component => component.Template != null)
                 .GroupBy(component => component.Template);
+        }
+
+        private static IEnumerable<TemplateComponentMethodItem> GetHandlersWithRoutes<TAttribute>(ComponentMethodItem item)
+            where TAttribute : HttpMethodAttribute =>
+            item.Method
+                .GetCustomAttributes<TAttribute>()?
+                .Select(attr => new TemplateComponentMethodItem(
+                    item,
+                    attr.Template.TrimStart('/').ToLowerInvariant()
+                ))
+                .ToArray();
+
+        private List<ComponentMethodItem> GetContextCompatibleHandlers(CompositionMetadataRegistry compositionMetadataRegistry)
+        {
+            return compositionMetadataRegistry.Components
+                .Select(componentType => new ComponentMethodItem(componentType, ExtractMethod(componentType)))
+                .Where(item => item.Method != null)
+                .ToList();
         }
 
         private MethodInfo ExtractMethod(Type componentType)
@@ -96,10 +112,7 @@ namespace ServiceComposer.AspNetCore
                 return componentType.GetMethod(nameof(ICompositionEventsSubscriber<ICompositionContext<TRequest, TResult>>.Subscribe));
             }
 
-            var message = $"Component needs to be either {typeof(ICompositionRequestsHandler<>).Name}, or " +
-                          $"{typeof(ICompositionEventsSubscriber<>).Name} with a generic type argument of {typeof(ICompositionContext<TRequest, TResult>).FullName}.";
-            throw new NotSupportedException(message);
+            return null;
         }
-
     }
 }
