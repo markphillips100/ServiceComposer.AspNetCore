@@ -16,6 +16,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceComposer.AspNetCore.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceComposer.AspNetCore.FluentResultsObjectRequests", "ServiceComposer.AspNetCore.FluentResultsObjectRequests\ServiceComposer.AspNetCore.FluentResultsObjectRequests.csproj", "{1F43B154-1A39-4689-B470-1E7AC96CC58E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benchmarks", "Benchmarks", "{C4AA1A77-258B-4527-8680-14A38A664EE4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenchmarkComparison", "BenchmarkComparison\BenchmarkComparison.csproj", "{4818C495-268F-4F16-A57A-2F8C422BACCD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,9 +54,16 @@ Global
 		{1F43B154-1A39-4689-B470-1E7AC96CC58E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F43B154-1A39-4689-B470-1E7AC96CC58E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F43B154-1A39-4689-B470-1E7AC96CC58E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4818C495-268F-4F16-A57A-2F8C422BACCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4818C495-268F-4F16-A57A-2F8C422BACCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4818C495-268F-4F16-A57A-2F8C422BACCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4818C495-268F-4F16-A57A-2F8C422BACCD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4818C495-268F-4F16-A57A-2F8C422BACCD} = {C4AA1A77-258B-4527-8680-14A38A664EE4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F1E91020-9272-4261-9A94-79C9D1B91447}

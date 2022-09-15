@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace ServiceComposer.AspNetCore
 {
@@ -93,26 +94,51 @@ namespace ServiceComposer.AspNetCore
                 ))
                 .ToArray();
 
-        private List<ComponentMethodItem> GetContextCompatibleHandlers(CompositionMetadataRegistry compositionMetadataRegistry)
+        private static List<ComponentMethodItem> GetContextCompatibleHandlers(CompositionMetadataRegistry compositionMetadataRegistry)
         {
             return compositionMetadataRegistry.Components
-                .Select(componentType => new ComponentMethodItem(componentType, ExtractMethod(componentType)))
+                .SelectMany(componentType => ExtractMethods(componentType).Select(method => new ComponentMethodItem(componentType, method)))
                 .Where(item => item.Method != null)
                 .ToList();
         }
 
-        private MethodInfo ExtractMethod(Type componentType)
+        private static MethodInfo[] ExtractMethods(Type componentType)
         {
             if (componentType.IsAssignableToGenericType(typeof(ICompositionRequestsHandler<ICompositionContext<TRequest, TResult>>)))
             {
-                return componentType.GetMethod(nameof(ICompositionRequestsHandler<ICompositionContext<TRequest, TResult>>.Handle));
+                return componentType.GetMethods()
+                    .Where(m => IsMethodCompatibleWithDelegate<CompositionHandlerHandleMethodDelegate<ICompositionContext<TRequest, TResult>>>(m))
+                    .ToArray();
             }
             else if (componentType.IsAssignableToGenericType(typeof(ICompositionEventsSubscriber<ICompositionContext<TRequest, TResult>>)))
             {
-                return componentType.GetMethod(nameof(ICompositionEventsSubscriber<ICompositionContext<TRequest, TResult>>.Subscribe));
+                return componentType.GetMethods()
+                    .Where(m => IsMethodCompatibleWithDelegate<SubscriberHandlerHandleMethodDelegate<ICompositionContext<TRequest, TResult>>>(m))
+                    .ToArray();
             }
 
-            return null;
+            return Array.Empty<MethodInfo>();
+        }
+
+        private delegate Task CompositionHandlerHandleMethodDelegate<TCompositionContext>(TCompositionContext compositionContext)
+            where TCompositionContext : ICompositionContext<TRequest, TResult>;
+
+        private delegate void SubscriberHandlerHandleMethodDelegate<TCompositionContext>(ICompositionEventsPublisher<TCompositionContext> publisher)
+            where TCompositionContext : ICompositionContext<TRequest, TResult>;
+
+        private static bool IsMethodCompatibleWithDelegate<T>(MethodInfo method) where T : class
+        {
+            Type delegateType = typeof(T);
+            MethodInfo delegateSignature = delegateType.GetMethod("Invoke");
+
+            bool parametersEqual = delegateSignature
+                .GetParameters()
+                .Select(x => x.ParameterType)
+                .SequenceEqual(method.GetParameters()
+                    .Select(x => x.ParameterType));
+
+            return delegateSignature.ReturnType == method.ReturnType &&
+                   parametersEqual;
         }
     }
 }
