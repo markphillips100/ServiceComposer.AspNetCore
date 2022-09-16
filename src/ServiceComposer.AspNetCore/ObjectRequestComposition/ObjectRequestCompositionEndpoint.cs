@@ -52,7 +52,8 @@ namespace ServiceComposer.AspNetCore.ObjectRequestComposition
             foreach (var group in components)
             {
                 var values = new RouteValueDictionary();
-                if (RouteMatcher.Match(group.Key, request.Path, values))
+                var uri = new Uri($"local://{request.Path}");
+                if (RouteMatcher.Match(group.Key, uri.AbsolutePath, values))
                 {
                     return (request with { Values = values }, group.ToList());
                 }

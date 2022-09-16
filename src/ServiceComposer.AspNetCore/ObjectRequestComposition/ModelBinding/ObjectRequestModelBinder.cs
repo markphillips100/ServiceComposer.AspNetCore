@@ -25,15 +25,16 @@ namespace ServiceComposer.AspNetCore.ObjectRequestComposition.ModelBinding
 
         public async Task<T> Bind<T>(ObjectRequest request) where T : new()
         {
-            //always rewind the stream; otherwise,
-            //if multiple handlers concurrently bind
-            //different models only the first one succeeds
-            //            request.Body.Position = 0;
+            var requestUri = new Uri($"local://{request.Path}");
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Path = requestUri.AbsolutePath;
+            httpContext.Request.Method = request.Method;
+            httpContext.Request.QueryString = new QueryString(requestUri.Query);
 
             var modelType = typeof(T);
             var modelMetadata = modelMetadataProvider.GetMetadataForType(modelType);
             var actionContext = new ActionContext(
-                new DefaultHttpContext(),
+                httpContext,
                 new RouteData(request.Values),
                 new ActionDescriptor(),
                 new ModelStateDictionary());
