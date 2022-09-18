@@ -19,6 +19,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             {
                 [FromRoute] public Guid Id { get; set; }
                 [FromQuery] public int SomeOtherParameter { get; set; }
+                [FromHeader(Name = "x-header")] public Guid SomeHeader { get; set; }
             }
 
             [HttpGet("/sample/{id:guid}")]
@@ -28,6 +29,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 var vm = compositionContext.ViewModel;
                 vm.echoId = requestModel.Id;
                 vm.someOtherParameter = requestModel.SomeOtherParameter;
+                vm.someHeader = requestModel.SomeHeader;
             }
         }
 
@@ -85,6 +87,37 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
             dynamic value = response.Value;
             Assert.Equal(id, value.echoId);
 
+        }
+
+        [Fact]
+        public async Task Returns_expected_result_with_header()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var someHeader = Guid.NewGuid();
+
+            var services = new ServiceCollection();
+            services.AddViewModelComposition(options =>
+            {
+                options.AssemblyScanner.Disable();
+                options.RegisterCompositionHandler<TestEchoHandler>();
+            });
+            services.AddControllers();
+            services.AddLogging();
+            services.AddViewModelCompositionForFluentResults();
+            var serviceProvider = services.BuildServiceProvider();
+            var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
+
+            var request = new ObjectRequest(HttpMethods.Get, $"/sample/{id}");
+            request.Headers.Add("x-header", someHeader.ToString());
+
+            // Act
+            var response = await endpoint.HandleAsync(request);
+
+            // Assert
+            Assert.True(response.IsSuccess);
+            dynamic value = response.Value;
+            Assert.Equal(someHeader, value.someHeader);
         }
 
     }

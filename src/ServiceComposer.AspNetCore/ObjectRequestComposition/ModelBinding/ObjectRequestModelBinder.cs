@@ -30,6 +30,11 @@ namespace ServiceComposer.AspNetCore.ObjectRequestComposition.ModelBinding
             httpContext.Request.Path = requestUri.AbsolutePath;
             httpContext.Request.Method = request.Method;
             httpContext.Request.QueryString = new QueryString(requestUri.Query);
+            foreach (var header in request.Headers)
+            {
+                httpContext.Request.Headers.Add(header);
+            }
+            httpContext.RequestServices = request.ServiceProvider;
 
             var modelType = typeof(T);
             var modelMetadata = modelMetadataProvider.GetMetadataForType(modelType);
