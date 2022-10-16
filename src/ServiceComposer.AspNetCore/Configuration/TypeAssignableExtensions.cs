@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ServiceComposer.AspNetCore.Configuration
 {
-    public static class TypeAssignableExtensions
+     public static class TypeAssignableExtensions
     {
         public static bool IsAssignableToOpenGenericType(this Type givenType, Type genericType)
         {
@@ -44,8 +44,8 @@ namespace ServiceComposer.AspNetCore.Configuration
               .GetInterfaces()
               .Where(it => it.IsGenericType)
               .Any(it =>
-                (genericType.IsGenericTypeDefinition && it.GetGenericTypeDefinition() == genericType) ||
-                (!genericType.IsGenericTypeDefinition && it == genericType));
+                genericType.IsGenericTypeDefinition && it.GetGenericTypeDefinition() == genericType ||
+                !genericType.IsGenericTypeDefinition && it == genericType);
         }
 
         private static bool MapsToGenericTypeDefinition(this Type givenType, Type genericType)

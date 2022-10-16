@@ -9,7 +9,7 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding
         public static Task<T> Bind<T>(this HttpRequest request) where T : new()
         {
             var context = request.HttpContext;
-            var binder = context.RequestServices.GetRequiredService<RequestModelBinder>();
+            var binder = context.RequestServices.GetRequiredService<HttpRequestModelBinder>();
 
             return binder.Bind<T>(request);
         }

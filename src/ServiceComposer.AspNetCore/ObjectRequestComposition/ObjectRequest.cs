@@ -6,6 +6,7 @@ namespace ServiceComposer.AspNetCore.ObjectRequestComposition
 {
     public record ObjectRequest(string Method, string Path)
     {
+        public string RequestId { get; init; }
         public RouteValueDictionary Values { get; init; } = new RouteValueDictionary();
         public HeaderDictionary Headers { get; init; } = new HeaderDictionary();
         public IServiceProvider ServiceProvider { get; init; }

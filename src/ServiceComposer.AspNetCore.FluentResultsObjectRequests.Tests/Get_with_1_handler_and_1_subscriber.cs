@@ -68,6 +68,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 options.RegisterCompositionHandler<TestGetSubscriberThatAppendAnotherStringWhenTestEventIsRaised>();
             });
             services.AddViewModelCompositionForFluentResults();
+            services.AddLogging();
             var serviceProvider = services.BuildServiceProvider();
             var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
 
@@ -93,6 +94,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 options.RegisterCompositionHandler<TestGetSubscriberThatCallsRaisesEvent>();
             });
             services.AddViewModelCompositionForFluentResults();
+            services.AddLogging();
             var serviceProvider = services.BuildServiceProvider();
             var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
 

@@ -9,13 +9,13 @@ using Microsoft.Extensions.Options;
 
 namespace ServiceComposer.AspNetCore.EndpointRouteComposition.ModelBinding
 {
-    class RequestModelBinder
+    class HttpRequestModelBinder
     {
         IModelBinderFactory modelBinderFactory;
         IModelMetadataProvider modelMetadataProvider;
         IOptions<MvcOptions> mvcOptions;
 
-        public RequestModelBinder(IModelBinderFactory modelBinderFactory, IModelMetadataProvider modelMetadataProvider, IOptions<MvcOptions> mvcOptions)
+        public HttpRequestModelBinder(IModelBinderFactory modelBinderFactory, IModelMetadataProvider modelMetadataProvider, IOptions<MvcOptions> mvcOptions)
         {
             this.modelBinderFactory = modelBinderFactory;
             this.modelMetadataProvider = modelMetadataProvider;

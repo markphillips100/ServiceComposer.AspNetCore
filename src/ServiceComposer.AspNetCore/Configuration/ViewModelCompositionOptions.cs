@@ -66,7 +66,7 @@ namespace ServiceComposer.AspNetCore.Configuration
                                                         $"services.{nameof(MvcServiceCollectionExtensions.AddRazorPages)}().");
                 }
 
-                return new RequestModelBinder(modelBinderFactory, modelMetadataProvider, mvcOptions);
+                return new HttpRequestModelBinder(modelBinderFactory, modelMetadataProvider, mvcOptions);
             });
 
             Services.AddSingleton(container =>

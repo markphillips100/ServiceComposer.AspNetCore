@@ -14,6 +14,9 @@ namespace ServiceComposer.AspNetCore
         public TResult Result { get; private set; }
         public dynamic ViewModel { get; }
 
+        public ICompositionContextModelBinder ModelBinder =>
+            new CompositionContextModelBinderFactory<TRequest, TResult>(this);
+            
         public CompositionContext(string requestId, TRequest request, DynamicViewModel viewModel)
         {
             RequestId = requestId;

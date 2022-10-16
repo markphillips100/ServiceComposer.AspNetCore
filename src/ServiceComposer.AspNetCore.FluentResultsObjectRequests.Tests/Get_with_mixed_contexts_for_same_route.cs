@@ -115,6 +115,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 options.RegisterCompositionHandler<TestObjectRequestGetHandler>();
             });
             services.AddViewModelCompositionForFluentResults();
+            services.AddLogging();
             var serviceProvider = services.BuildServiceProvider();
             var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
 
@@ -175,6 +176,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 options.RegisterCompositionHandler<TestMultipleRequestGetHandler>();
             });
             services.AddViewModelCompositionForFluentResults();
+            services.AddLogging();
             var serviceProvider = services.BuildServiceProvider();
             var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
 

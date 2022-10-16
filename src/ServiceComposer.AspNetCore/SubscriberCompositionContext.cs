@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace ServiceComposer.AspNetCore
 {
@@ -22,6 +23,9 @@ namespace ServiceComposer.AspNetCore
 
         public dynamic ViewModel => _internal.ViewModel;
 
+        public ICompositionContextModelBinder ModelBinder =>
+            new CompositionContextModelBinderFactory<TRequest, TResult>(this);
+
         public void SetResult(TResult result)
         {
             _internal.SetResult(result);
@@ -29,12 +33,12 @@ namespace ServiceComposer.AspNetCore
 
         public Task RaiseEvent(object @event)
         {
-            throw new System.InvalidOperationException("Subscribers cannot raise events.");
+            throw new InvalidOperationException("Subscribers cannot raise events.");
         }
 
         public void Subscribe<TEvent>(CompositionEventHandler<TEvent, ICompositionContext<TRequest, TResult>> handler)
         {
-            throw new System.InvalidOperationException("Subscribers cannot subscribe to more events.");
+            throw new InvalidOperationException("Subscribers cannot subscribe to more events.");
         }
     }
 }

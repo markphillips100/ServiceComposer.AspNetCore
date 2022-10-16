@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ServiceComposer.AspNetCore.Configuration;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
-using ServiceComposer.AspNetCore.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;

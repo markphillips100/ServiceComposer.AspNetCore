@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Routing.Template;
+using Microsoft.AspNetCore.Routing.Template;
 using Microsoft.AspNetCore.Routing;
 
-namespace ServiceComposer.AspNetCore.ObjectRequestComposition.Internal
+namespace ServiceComposer.AspNetCore
 {
     internal static class RouteMatcher
     {

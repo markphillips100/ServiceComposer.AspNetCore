@@ -1,4 +1,5 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using ServiceComposer.AspNetCore.ObjectRequestComposition;
 using System;
 
@@ -9,8 +10,9 @@ namespace ServiceComposer.AspNetCore.FluentResultsObjectRequests
         public FluentResultObjectRequestCompositionEndpoint(
             CompositionHandler<ObjectRequest, Result<DynamicViewModel>> compositionHandler,
             CompositionMetadataRegistry<ObjectRequest, Result<DynamicViewModel>> registry,
-            IServiceProvider serviceProvider)
-            : base(compositionHandler, registry, serviceProvider) { }
+            IServiceProvider serviceProvider,
+            ILogger<FluentResultObjectRequestCompositionEndpoint> logger)
+            : base(compositionHandler, registry, serviceProvider, logger) { }
 
         public override Result<DynamicViewModel> HandleNotFound()
         {

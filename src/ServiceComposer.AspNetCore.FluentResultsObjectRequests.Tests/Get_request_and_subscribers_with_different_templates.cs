@@ -67,6 +67,7 @@ namespace ServiceComposer.AspNetCore.ObjectComposition.Tests
                 options.RegisterCompositionHandler<TestGetSubscriberNotUsedTemplate>();
             });
             services.AddViewModelCompositionForFluentResults();
+            services.AddLogging();
             var serviceProvider = services.BuildServiceProvider();
             var endpoint = serviceProvider.GetRequiredService<ICompositionEndpoint<ObjectRequest, Result<DynamicViewModel>>>();
 

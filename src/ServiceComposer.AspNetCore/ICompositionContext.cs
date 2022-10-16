@@ -14,5 +14,6 @@ namespace ServiceComposer.AspNetCore
         public TRequest Request { get; }
         public TResult Result { get; }
         void SetResult(TResult result);
+        ICompositionContextModelBinder ModelBinder { get; }
     }
 }

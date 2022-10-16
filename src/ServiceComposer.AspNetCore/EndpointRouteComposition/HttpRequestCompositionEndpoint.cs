@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
-using ServiceComposer.AspNetCore.ObjectRequestComposition.Internal;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace ServiceComposer.AspNetCore.EndpointRouteComposition
@@ -14,39 +14,53 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
     {
         private readonly CompositionHandler<HttpRequest, IActionResult> _compositionHandler;
         private readonly CompositionMetadataRegistry<HttpRequest, IActionResult> _registry;
+        private readonly ILogger<HttpRequestCompositionEndpoint> _logger;
 
         public HttpRequestCompositionEndpoint(
             CompositionHandler<HttpRequest, IActionResult> compositionHandler,
-            CompositionMetadataRegistry<HttpRequest, IActionResult> registry)
+            CompositionMetadataRegistry<HttpRequest, IActionResult> registry,
+            ILogger<HttpRequestCompositionEndpoint> logger)
         {
             _compositionHandler = compositionHandler;
             _registry = registry;
+            _logger = logger;
         }
 
         public async Task<IActionResult> HandleAsync(HttpRequest httpRequest)
         {
+            var requestId = httpRequest.Headers.GetComposedRequestIdHeaderOr(() => Guid.NewGuid().ToString());
+            _logger.LogTrace("CompositionRequest [{requestId}]: HandleAsync called for HttpRequest with url {url} and method {method}", requestId, httpRequest.GetDisplayUrl(), httpRequest.Method);
+
             var (request, components) = HttpMethodComponentsForRequest(httpRequest);
-            var componentsTypes = components.Select(x => x.ComponentType).ToList();
+            if (request == null)
+            {
+                _logger.LogTrace("CompositionRequest [{requestId}]: request has no matching handlers.", requestId);
+                return new StatusCodeResult(StatusCodes.Status405MethodNotAllowed);
+            }
 
             httpRequest.HttpContext.Request.EnableBuffering();
 
-            return await _compositionHandler.HandleComposableRequest(httpRequest, componentsTypes, this);
+            var result =  await _compositionHandler.HandleComposableRequest(requestId, httpRequest, components.Select(x => x.ComponentType).ToList(), this);
+
+            _logger.LogTrace("CompositionRequest [{requestId}]: final result set to {result}", requestId, result.ToString());
+
+            return result;
         }
 
         private (string, IList<TemplateComponentMethodItem>) HttpMethodComponentsForRequest(HttpRequest request)
         {
             return request.Method switch
             {
-                "GET" => GetObjectRequestAndHandlers(request, _registry.GetComponents.ToList()),
-                "POST" => GetObjectRequestAndHandlers(request, _registry.PostComponents.ToList()),
-                "PUT" => GetObjectRequestAndHandlers(request, _registry.PutComponents.ToList()),
-                "PATCH" => GetObjectRequestAndHandlers(request, _registry.PatchComponents.ToList()),
-                "DELETE" => GetObjectRequestAndHandlers(request, _registry.DeleteComponents.ToList()),
+                "GET" => MatchRequestWithHandlers(request, _registry.GetComponents.ToList()),
+                "POST" => MatchRequestWithHandlers(request, _registry.PostComponents.ToList()),
+                "PUT" => MatchRequestWithHandlers(request, _registry.PutComponents.ToList()),
+                "PATCH" => MatchRequestWithHandlers(request, _registry.PatchComponents.ToList()),
+                "DELETE" => MatchRequestWithHandlers(request, _registry.DeleteComponents.ToList()),
                 _ => throw new InvalidOperationException("Unknown httpMethod")
             };
         }
 
-        private (string, IList<TemplateComponentMethodItem>) GetObjectRequestAndHandlers(HttpRequest request, IList<IGrouping<string, TemplateComponentMethodItem>> components)
+        private static (string, IList<TemplateComponentMethodItem>) MatchRequestWithHandlers(HttpRequest request, IList<IGrouping<string, TemplateComponentMethodItem>> components)
         {
             foreach (var group in components)
             {
@@ -56,9 +70,8 @@ namespace ServiceComposer.AspNetCore.EndpointRouteComposition
                     return (group.Key, group.ToList());
                 }
             }
-            throw new InvalidOperationException($"No route matches the path {request.Path} for {request.Method} registered route templates");
+            return (null, null);
         }
-
 
         public IActionResult HandleNotFound()
         {
